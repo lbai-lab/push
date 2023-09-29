@@ -108,9 +108,20 @@ def _mswag_sample_instrumented2(particle: Particle,
         for x, y in zip(max_pred, label):
             classes[y.item()][x.item()] += 1
     
+    all_preds = [my_ans['preds']] + [ans[i-1]['preds'] for i in range(1, num_models)]
+    classes2 = {k: [0 for i in range(10)] for k in range(10)}
+    for idx, (data, label) in enumerate(dataloader):
+        preds = []
+        for m in range(num_models):
+            preds += [torch.stack([all_preds[m][i][idx] for i in range(num_samples)])]
+        max_pred = torch.mode(torch.cat(preds, dim=0), dim=0).values
+        for x, y in zip(max_pred, label):
+            classes2[y.item()][x.item()] += 1
+
     if state["args"].wandb:
         wandb.log({
-            f"max_dist{pid}": str(classes)
+            f"max_dist{pid}": str(classes),
+            f"flat_max_dist{pid}": str(classes2),
         })
 
 
@@ -263,3 +274,4 @@ def _mswag_sample_instrumented(particle: Particle,
                 f"swag_loss{pid}": torch.mean(torch.tensor(swag_losses)),
                 f"classes_dist{pid}": str(classes)
             })
+            

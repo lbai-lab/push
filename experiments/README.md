@@ -30,16 +30,16 @@ pip install -e .
     ```
 3. Quick test
 ```
-./quick_test.sh
+./scripts/quick_test.sh
 ```
 
 ## Usage
 
-1. See `paperspace_train_all_devices_1.sh`, `paperspace_train_all_devices_2.sh`, `paperspace_train_all_devices_3.sh`
+1. See `./scripts/paperspace_train_all_devices_1.sh`, `./scripts/paperspace_train_all_devices_2.sh`, `./scripts/paperspace_train_all_devices_3.sh`
    to test scaling of particles across architectures, devices, and tasks.
-2. See `size_scale_1.sh`, `size_scale_2.sh`, `size_scale_4.sh` to test scaling of PusH on various transformers of various depths.
-3. See `train_baseline.sh` to test baseline implementations.
-4. See `bayes_1.sh` and `bayes_2.sh` to test multi-SWAG on transformers of various depths and widths.
+2. See `./scripts/size_scale_1.sh`, `./scripts/size_scale_2.sh`, `./scripts/size_scale_4.sh` to test scaling of PusH on various transformers of various depths.
+3. See `./scripts/train_baseline.sh` to test baseline implementations.
+4. See `./scripts/bayes_1.sh` and `./scripts/bayes_2.sh` to test multi-SWAG on transformers of various depths and widths.
 
 
 ## Models

@@ -89,7 +89,7 @@ class TestEnd2End(unittest.TestCase):
             num_models,
             cache_size,
             view_size, 
-            BiggerNN, L, D
+            BiggerNN, L, D, num_devices=1
         )
 
     def test_stein_vgd(self):
@@ -97,7 +97,7 @@ class TestEnd2End(unittest.TestCase):
         D = 20
         epochs = 3
         particles = 4
-        devices = 2
+        devices = 1
         cache_size = 4
         view_size = 4
         dataset = RandDataset(D)

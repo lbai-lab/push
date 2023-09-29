@@ -72,9 +72,6 @@ def _swag_step(particle: Particle,
 
 
 def update_theta(state, state_sq, param, param_sq, n):
-    # for param in theta.keys():
-    #     theta[param] = (theta[param]*n+tt[param])/(n+1)
-    #     theta2[param] = (theta2[param]*n+tt2[param])/(n+1)
     for st, st_sq, p, p_sq in zip(state, state_sq, param, param_sq):
         st.data = (st.data * n + p.data)/(n+1)
         st_sq.data = (st_sq.data * n + p_sq.data)/(n+1)

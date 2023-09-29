@@ -20,7 +20,7 @@ def init_node_event_loop(mk_module: Callable,
                          cache_size: int,
                          view_size: int) -> None:
     nel = NodeEventLoop(mk_module, args, in_queues[rank], out_queues[rank], rank, devices, cache_size, view_size)
-    out_queues[rank].put(DevEvtLoopInitMSG())
+    out_queues[rank].put(NodeEvtLoopInitMSG())
     nel._start_event_loop()
 
 
@@ -88,7 +88,7 @@ class PusH(Waitable):
 
         # Acknowledge that device event loops have been started
         msg = self._out_queues[self.rank].get()
-        if not isinstance(msg, DevEvtLoopInitMSG):
+        if not isinstance(msg, NodeEvtLoopInitMSG):
             raise ValueError(f"Fatal error ... inconsistent message state {msg}")
 
     # -----------------------------------------------------
@@ -100,7 +100,7 @@ class PusH(Waitable):
 
     def _cleanup(self) -> None:
         for device_id, proc in self._processes.items():
-            self._in_queues[device_id].put(DevEvtLoopCleanupMSG())
+            self._in_queues[device_id].put(NodeEvtLoopCleanupMSG())
         for device_id, proc in self._processes.items():
             proc.join()
 
@@ -142,7 +142,7 @@ class PusH(Waitable):
 
                     if isinstance(msg, Exception):
                         raise msg
-                    elif isinstance(msg, ReceiveFuncAckPNNMSG):
+                    elif isinstance(msg, ReceiveFuncAckPDMSG):
                         self._results[msg.pid_fid[1]] = None
                     loop()
                     break
@@ -190,18 +190,18 @@ class PusH(Waitable):
         self._particle_to_device[new_pid] = device
         self._particle_to_rank[new_pid] = self.rank
         self._particle_to_futures[new_pid] = []
-        self._in_queues[self.rank].put(ReceiveParticleInitPNNMSG(device, new_pid, mk_optim, receive, state))
+        self._in_queues[self.rank].put(ReceiveParticleInitPDMSG(device, new_pid, mk_optim, receive, state))
         
         # Acknowledge
         msg = self._out_queues[self.rank].get()
-        if not isinstance(msg, ReceiveParticleInitAckPNNMSG):
+        if not isinstance(msg, ReceiveParticleInitAckPDMSG):
             raise ValueError(f"Fatal error ... inconsistent message state")
 
         # Broadcast so we can discover other particles
         for pid, queue in self._in_queues.items():
-            queue.put(DELBroadcastParticlesMSG(self._in_queues, self._out_queues, self._particle_to_device))
+            queue.put(NELBroadcastParticlesMSG(self._in_queues, self._out_queues, self._particle_to_device))
             msg = self._out_queues[pid].get()
-            if not isinstance(msg, DELBroadcastParticlesAckMSG):
+            if not isinstance(msg, NELBroadcastParticlesAckMSG):
                 raise ValueError(f"Fatal error ... inconsistent message state")
         
         return new_pid
@@ -225,7 +225,7 @@ class PusH(Waitable):
 
         # Initiate task
         rank = self._particle_to_rank[pid]
-        self._in_queues[rank].put(ReceiveParametersPNNMSG((pid, fid), pid))
+        self._in_queues[rank].put(ReceiveParametersPDMSG((pid, fid), pid))
 
         if sync:
             # Synchronize
@@ -259,7 +259,7 @@ class PusH(Waitable):
 
         # Send message
         rank = self._particle_to_rank[pid_to]
-        self._in_queues[rank].put(ReceiveFuncPNNMSG((pid_to, fid), pid_to, msg, args))
+        self._in_queues[rank].put(ReceiveFuncPDMSG((pid_to, fid), pid_to, msg, args))
 
         if sync:
             # Synchronize

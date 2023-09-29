@@ -139,23 +139,23 @@ class NodeEventLoop(Waitable):
         # PNN functionality
         # -----------------------------------------------------
 
-        elif isinstance(msg, ReceiveParametersPNNMSG):
+        elif isinstance(msg, ReceiveParametersPDMSG):
             # Handle message
             pid_device = self._particle_to_device[msg.pid]
             module = self._context_switch_module(msg.pid)
             params = [x.detach().to("cpu") for x in module.parameters()]
 
             # Acknowledge
-            self.out_queue.put(ReceiveParametersAckPNNMSG(msg.pid_fid, params))
+            self.out_queue.put(ReceiveParametersAckPDMSG(msg.pid_fid, params))
 
-        elif isinstance(msg, ReceiveRegisterPNNMSG):
+        elif isinstance(msg, ReceiveRegisterPDMSG):
             # Handle message
             self._hooks[msg.pid][msg.msg] = msg.fn
 
             # Acknowledge
-            self.out_queue.put(ReceiveRegisterAckPNNMSG())
+            self.out_queue.put(ReceiveRegisterAckPDMSG())
 
-        elif isinstance(msg, ReceiveParticleInitPNNMSG):
+        elif isinstance(msg, ReceiveParticleInitPDMSG):
             # Handle message
             self._particle_to_rank[msg.pid] = self.rank       # set rank
             self._particle_to_device[msg.pid] = msg.device    # set device
@@ -169,7 +169,7 @@ class NodeEventLoop(Waitable):
             self._particle_to_futures[msg.pid] = set()
 
             # Acknowledge
-            self.out_queue.put(ReceiveParticleInitAckPNNMSG())
+            self.out_queue.put(ReceiveParticleInitAckPDMSG())
 
         elif isinstance(msg, NELSaveModel):
             # Handle message
@@ -183,23 +183,23 @@ class NodeEventLoop(Waitable):
         # Node Event Loop Functionality
         # -----------------------------------------------------
 
-        elif isinstance(msg, DELBroadcastParticlesMSG):
+        elif isinstance(msg, NELBroadcastParticlesMSG):
             # Handle message
             self._in_queues = msg.in_queues
             self._out_queues = msg.out_queues
             self._particle_to_device = msg.particle_to_device
 
             # Acknowledge
-            self.out_queue.put(DELBroadcastParticlesAckMSG())
+            self.out_queue.put(NELBroadcastParticlesAckMSG())
 
-        elif isinstance(msg, DevEvtLoopCleanupMSG):
+        elif isinstance(msg, NodeEvtLoopCleanupMSG):
             return False
 
         # -----------------------------------------------------
         # PNN - particle functionality
         # -----------------------------------------------------
         
-        elif isinstance(msg, ReceiveFuncPNNMSG):
+        elif isinstance(msg, ReceiveFuncPDMSG):
             # Handle message
             sender, pid, msg_name = msg.pid_fid, msg.pid_to, msg.msg
             if msg_name in self._hooks[pid]:
@@ -218,7 +218,7 @@ class NodeEventLoop(Waitable):
                     raise e
                 
                 # Acknowledge
-                self.out_queue.put(ReceiveFuncAckPNNMSG(sender))
+                self.out_queue.put(ReceiveFuncAckPDMSG(sender))
 
         return True        
 
@@ -258,7 +258,7 @@ class NodeEventLoop(Waitable):
             if isinstance(msg, ReceiveGetAckMSG):
                 self._dispatch_receive_get_ack(msg)
                 result = check_results(fid)
-            elif isinstance(msg, ReceiveFuncMSG) or isinstance(msg, ReceiveFuncPNNMSG):
+            elif isinstance(msg, ReceiveFuncMSG) or isinstance(msg, ReceiveFuncPDMSG):
                 # Note: Handle this particles receive
                 #       Additional parallelism here if we are not on the same PID
                 msgs += [msg]
@@ -273,7 +273,7 @@ class NodeEventLoop(Waitable):
         return result[1]
 
     def _cleanup(self) -> None:
-        self._dispatch(DevEvtLoopCleanupMSG())
+        self._dispatch(NodeEvtLoopCleanupMSG())
 
     # -----------------------------------------------------
     # Future functionality

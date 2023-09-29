@@ -10,24 +10,24 @@ class MSG:
 # Device Event Loop Messages
 # =============================================================================
 
-class DevEvtLoopInitMSG(MSG):
+class NodeEvtLoopInitMSG(MSG):
     def __init__(self):
         pass
 
 
-class DevEvtLoopCleanupMSG(MSG):
+class NodeEvtLoopCleanupMSG(MSG):
     def __init__(self):
         pass
 
 
-class DELBroadcastParticlesMSG(MSG):
+class NELBroadcastParticlesMSG(MSG):
     def __init__(self, in_queues, out_queues, particle_to_device):
         self.in_queues = in_queues
         self.out_queues = out_queues
         self.particle_to_device = particle_to_device
 
 
-class DELBroadcastParticlesAckMSG(MSG):
+class NELBroadcastParticlesAckMSG(MSG):
     def __init__(self):
         pass
 
@@ -43,14 +43,14 @@ class NELSaveModelAckPDMSG(MSG):
 
 
 # =============================================================================
-# Particle Neural Network Messages
+# Push Distribution Messages
 # =============================================================================
 
 # -----------------------------------------------------
 # One-Time
 # -----------------------------------------------------
 
-class ReceiveParticleInitPNNMSG(MSG):
+class ReceiveParticleInitPDMSG(MSG):
     def __init__(self, device: int, pid: int, mk_optim: Callable, receive, state):
         self.device = device
         self.pid = pid
@@ -59,12 +59,12 @@ class ReceiveParticleInitPNNMSG(MSG):
         self.state = state
 
 
-class ReceiveParticleInitAckPNNMSG(MSG):
+class ReceiveParticleInitAckPDMSG(MSG):
     def __init__(self):
         pass
 
 
-class ReceiveRegisterPNNMSG(MSG):
+class ReceiveRegisterPDMSG(MSG):
     def __init__(self, pid: int, msg: str, fn: Callable, state: dict[str, any]):
         self.pid = pid
         self.msg = msg
@@ -72,7 +72,7 @@ class ReceiveRegisterPNNMSG(MSG):
         self.state = state
 
 
-class ReceiveRegisterAckPNNMSG(MSG):
+class ReceiveRegisterAckPDMSG(MSG):
     def __init__(self):
         pass
 
@@ -81,7 +81,7 @@ class ReceiveRegisterAckPNNMSG(MSG):
 # Multi-Time
 # -----------------------------------------------------
 
-class ReceiveFuncPNNMSG(MSG):
+class ReceiveFuncPDMSG(MSG):
     def __init__(self, pid_fid, pid_to: int, msg: str, args: list[any]):
         self.pid_fid = pid_fid
         self.pid_to = pid_to
@@ -89,18 +89,18 @@ class ReceiveFuncPNNMSG(MSG):
         self.args = args
 
 
-class ReceiveFuncAckPNNMSG(MSG):
+class ReceiveFuncAckPDMSG(MSG):
     def __init__(self, pid_fid):
         self.pid_fid = pid_fid
 
 
-class ReceiveParametersPNNMSG(MSG):
+class ReceiveParametersPDMSG(MSG):
     def __init__(self, pid_fid, pid: int):
         self.pid_fid = pid_fid
         self.pid = pid
 
 
-class ReceiveParametersAckPNNMSG(MSG):
+class ReceiveParametersAckPDMSG(MSG):
     def __init__(self, pid_fid, params: list[torch.Tensor]):
         self.pid_fid = pid_fid
         self.params = params

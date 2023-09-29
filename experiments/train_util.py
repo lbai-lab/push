@@ -16,9 +16,6 @@ from nns.losses import EnergyForceLoss
 from nns.unet.UnetDataSet import UNetDatasetSingle
 from nns.unet.unetWrap import UNet1dWrap, unet_loss_fn
 
-from nns.fno.FNODataset import FNODatasetSingle
-from nns.fno.fnoWrap import FNO1dWrap, fno_loss_fn
-
 # [Vision]
 from nns.vit.vit import Modifiedvit_b_16, Modifiedvit_b_16_adjust
 from nns.cnn.cnn import CNN
@@ -49,13 +46,6 @@ def unet_collate(batch, args):
     
     return x, y
     
-def fno_collate(batch):
-    data_samples, label_samples, grid_samples = zip(*batch) 
-    data = torch.stack(data_samples)
-    label = torch.stack(label_samples)
-    grid = torch.stack(grid_samples)
-    
-    return (data, grid, label),label
 
 def qchem_collate(batch):
     data = {"R":[], "z":[], "batch":[], "n":[]}
@@ -98,8 +88,6 @@ def vision_collate(batch):
 def get_model_and_args(args):
     if args.nn_module == UNet1dWrap:
         return UNet1dWrap, [args.in_channels, args.out_channels]
-    elif args.nn_module == FNO1dWrap:
-        return FNO1dWrap, [args.num_channels, args.width, args.modes, args.initial_step, args.t_train]
     elif args.nn_module == SchNetWrap:
         return SchNetWrap, []
     elif args.nn_module == CGCNN:
@@ -123,9 +111,6 @@ def get_model(args):
     model = None
     if args.nn_module == UNet1dWrap:
         model  = UNet1dWrap(args.in_channels, args.out_channels)
-    
-    elif args.nn_module == FNO1dWrap:
-        model = FNO1dWrap(args.num_channels, args.width, args.modes, args.initial_step,args.t_train)
     
     elif args.nn_module == SchNetWrap:
         model = SchNetWrap()
@@ -155,8 +140,6 @@ def get_model(args):
 def get_loss_fn(args):
     if args.model == "unet":
         return unet_loss_fn
-    elif args.model == "fno":
-        return fno_loss_fn
     elif args.model == "schnet" or args.model == "cgcnn":
         return EnergyForceLoss
     elif args.model == "cnn" or  args.model == "resnet" or args.model == "transformer" or args.model == "transformer2":
@@ -216,41 +199,6 @@ def get_dataloaders(args):
                                  num_workers=0, shuffle=False, collate_fn=collate_fn)
         
         return train_loader, test_loader
-    
-    elif args.model == "fno":
-        file_name = '1D_Advection_Sols_beta0.1.hdf5'
-        if args.cloud_path:
-            base_path = '/home/paperspace/PusH2/experiments/data/1D/Advection/Train/'
-        else:
-            base_path = '/usr/data1/PDEBench/pdebench/data/1D/Advection/'
-        train_dataset = FNODatasetSingle(file_name,
-                                         saved_folder=base_path,
-                                         reduced_resolution=args.reduced_resolution,
-                                         reduced_resolution_t=args.reduced_resolution_t,
-                                         reduced_batch=args.reduced_batch,
-                                         initial_step=args.initial_step)
-        test_dataset = FNODatasetSingle(file_name,
-                                        saved_folder=base_path,
-                                        reduced_resolution=args.reduced_resolution,
-                                        reduced_resolution_t=args.reduced_resolution_t,
-                                        reduced_batch=args.reduced_batch,
-                                        initial_step=args.initial_step,
-                                        if_test=True)
-        
-        if args.dataset_length is not None:
-            train_dataset = torch.utils.data.random_split(train_dataset, [args.dataset_length, len(train_dataset) - args.dataset_length])[0]
-            test_dataset = torch.utils.data.random_split(test_dataset, [int(args.dataset_length/10), len(test_dataset) - int(args.dataset_length/10)])[0]
-            print("truncated train_dataset", len(train_dataset))
-
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size,
-                                                num_workers=0, shuffle=True,collate_fn=fno_collate)
-        test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size,
-                                                num_workers=0, shuffle=False,collate_fn=fno_collate)
-        # Create a decoy dataloader to update t_train 
-        temp_train_loader = DataLoader(train_dataset, batch_size=1, num_workers=0, shuffle=False)
-        _, _data, _ = next(iter(temp_train_loader))
-        if args.t_train > _data.shape[-2]:
-            args.t_train = _data.shape[-2]      
     
     elif args.model == "schnet" or args.model == "cgcnn":
         train_dataset = MD17SingleDataset("trajectory", args.molecule, "train", args.split, root="./data/MD17")
@@ -331,21 +279,6 @@ def get_argparser(parser):
         parser.add_argument("-us", "--unroll_step", type=int, default=20)
         parser.add_argument("-cp", "--cloud_path", action='store_true')
     
-    elif args.model == "fno":
-        # [Fno params]
-        parser.add_argument("-nm", "--nn_module", type=nn.Module, default=FNO1dWrap)
-        parser.add_argument("-bs", "--batch_size", type=int, default=50)
-        parser.add_argument("-rb", "--reduced_batch", type=int, default=1)
-        parser.add_argument("-rr", "--reduced_resolution", type=int, default=4)
-        parser.add_argument("-rrt", "--reduced_resolution_t", type=int, default=5)
-        parser.add_argument("-is", "--initial_step", type=int, default=10)
-        parser.add_argument("-tt", "--t_train", type=str, default=200)
-        parser.add_argument("-nc", "--num_channels", type=str, default=1)
-        parser.add_argument("-m", "--modes", type=int, default=12)
-        parser.add_argument("-wi", "--width", type=int, default=20)
-        parser.add_argument("-mo", "--out_channels", type=int, default=1)
-        parser.add_argument("-cp", "--cloud_path", action='store_true')
-
     elif args.model == "schnet":
         parser.add_argument("-nm", "--nn_module", type=nn.Module, default=SchNetWrap)
         parser.add_argument("-P", "--split", type=int, default=1000,
@@ -455,3 +388,4 @@ class MyTimer:
 
     def __exit__(self, type, value, traceback):
         self.time = time.perf_counter() - self.start
+        

@@ -8,7 +8,7 @@ import torch.nn as nn
 class ParticleCache:
     """Loads particles on and off the accelerator.
     """    
-    def __init__(self, mk_module: Callable, args: list[any], cache_size: int, device: int, lock: threading.Lock) -> None:
+    def __init__(self, mk_module: Callable, args: List[any], cache_size: int, device: int, lock: threading.Lock) -> None:
         # Module
         self.mk_module = mk_module
         self.args = args
@@ -161,7 +161,7 @@ class ParticleCache:
     def contains(self, pid):
         return pid in self._pid2cache
 
-    def particles(self) -> list[int]:
+    def particles(self) -> List[int]:
         return self._pid2cache.keys()
     
     def __str__(self) -> str:
@@ -171,7 +171,7 @@ class ParticleCache:
 class ParticleCacheLRU:
     """Loads particles on and off the accelerator.
     """    
-    def __init__(self, mk_module: Callable, args: list[any], cache_size: int, device: int) -> None:
+    def __init__(self, mk_module: Callable, args: List[any], cache_size: int, device: int) -> None:
         # Module
         self.mk_module = mk_module
         self.args = args
@@ -257,5 +257,5 @@ class ParticleCacheLRU:
     def contains(self, pid):
         return pid in self._module_cache
 
-    def particles(self) -> list[int]:
+    def particles(self) -> List[int]:
         return self._module_cache.keys()

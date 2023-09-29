@@ -21,7 +21,7 @@ class NodeEventLoop(Waitable):
     """    
     def __init__(self,
                  mk_module: Callable,
-                 args: list[any],
+                 args: List[any],
                  in_queue: mp.Queue,
                  out_queue: mp.Queue,
                  rank: int,

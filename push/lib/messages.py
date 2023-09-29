@@ -65,7 +65,7 @@ class ReceiveParticleInitAckPDMSG(MSG):
 
 
 class ReceiveRegisterPDMSG(MSG):
-    def __init__(self, pid: int, msg: str, fn: Callable, state: dict[str, any]):
+    def __init__(self, pid: int, msg: str, fn: Callable, state: Dict[str, any]):
         self.pid = pid
         self.msg = msg
         self.fn = fn
@@ -82,7 +82,7 @@ class ReceiveRegisterAckPDMSG(MSG):
 # -----------------------------------------------------
 
 class ReceiveFuncPDMSG(MSG):
-    def __init__(self, pid_fid, pid_to: int, msg: str, args: list[any]):
+    def __init__(self, pid_fid, pid_to: int, msg: str, args: List[any]):
         self.pid_fid = pid_fid
         self.pid_to = pid_to
         self.msg = msg
@@ -101,7 +101,7 @@ class ReceiveParametersPDMSG(MSG):
 
 
 class ReceiveParametersAckPDMSG(MSG):
-    def __init__(self, pid_fid, params: list[torch.Tensor]):
+    def __init__(self, pid_fid, params: List[torch.Tensor]):
         self.pid_fid = pid_fid
         self.params = params
 
@@ -111,7 +111,7 @@ class ReceiveParametersAckPDMSG(MSG):
 # =============================================================================
 
 class ReceiveFuncMSG(MSG):
-    def __init__(self, pid_fid, pid: int, msg_name: str, args: list[any]):
+    def __init__(self, pid_fid, pid: int, msg_name: str, args: List[any]):
         self.pid_fid = pid_fid
         self.pid = pid
         self.msg_name = msg_name
@@ -131,7 +131,7 @@ class ReceiveGetMSG(MSG):
 
 
 class ReceiveGetAckMSG(MSG):
-    def __init__(self, fid: int, pid: int, params: list[torch.Tensor], params_grad: list[torch.Tensor]):
+    def __init__(self, fid: int, pid: int, params: List[torch.Tensor], params_grad: List[torch.Tensor]):
         self.fid = fid
         self.pid = pid
         self.params = params

@@ -14,9 +14,9 @@ setup(
     description="Concurrent Probabilistic Programming for Bayesian Deep Learning",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="coming soon...",
+    url="https://github.com/lbai-lab/push/tree/main",
     author="The PusH Authors",
-    author_email="",
+    author_email="dan.e.huang@gmail.com",
     license="Apache 2.0",
     classifiers=[
         "License :: OSI Approved :: Apache 2.0 License",

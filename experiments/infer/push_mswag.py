@@ -77,18 +77,18 @@ def _mswag_particle_instrumented(particle: Particle,
 # PusH Multi-Swag Inference
 # =============================================================================
 
-def _mswag_sample_instrumented2(particle: Particle,
-                  dataloader: DataLoader,
-                  loss_fn: Callable,
-                  scale: float,
-                  var_clamp: float,
-                  num_samples: int,
-                  num_models) -> None:
+def _mswag_sample_entry_instrumented(particle: Particle,
+                                     dataloader: DataLoader,
+                                     loss_fn: Callable,
+                                     scale: float,
+                                     var_clamp: float,
+                                     num_samples: int,
+                                     num_models) -> None:
     state = particle.state
     pid = particle.pid
 
     other_pids = list(range(1, num_models))
-    my_ans = _mswag_sample(particle, dataloader, loss_fn, scale, var_clamp, num_samples)
+    my_ans = _mswag_sample_instrumented(particle, dataloader, loss_fn, scale, var_clamp, num_samples)
     futs = [particle.send(pid, "SWAG_SAMPLE", dataloader, loss_fn, scale, var_clamp, num_samples) for pid in other_pids]
     ans = [f.wait() for f in futs]
     
@@ -116,12 +116,12 @@ def _mswag_sample_instrumented2(particle: Particle,
         })
 
 
-def _mswag_sample(particle: Particle,
-                  dataloader: DataLoader,
-                  loss_fn: Callable,
-                  scale: float,
-                  var_clamp: float,
-                  num_samples: int) -> None:
+def _mswag_sample_instrumented(particle: Particle,
+                               dataloader: DataLoader,
+                               loss_fn: Callable,
+                               scale: float,
+                               var_clamp: float,
+                               num_samples: int) -> None:
     """Inspired by https://github.com/wjmaddox/swa_gaussian/blob/master/swag/posteriors/swag.py
     """
     state = particle.state
@@ -196,72 +196,69 @@ def _mswag_sample(particle: Particle,
     }
 
 
-def _mswag_sample_instrumented(particle: Particle,
-                  dataloader: DataLoader,
-                  loss_fn: Callable,
-                  scale: float,
-                  var_clamp: float,
-                  num_samples: int) -> None:
-    """Inspired by https://github.com/wjmaddox/swa_gaussian/blob/master/swag/posteriors/swag.py
-    """
-    state = particle.state
-    pid = particle.pid
-    # Gather
-    mean_list = [param for param in particle.state[pid]["mom1"]]
-    sq_mean_list = [param for param in particle.state[pid]["mom2"]]
+# def _mswag_sample_instrumented(particle: Particle,
+#                   dataloader: DataLoader,
+#                   loss_fn: Callable,
+#                   scale: float,
+#                   var_clamp: float,
+#                   num_samples: int) -> None:
+#     """Inspired by https://github.com/wjmaddox/swa_gaussian/blob/master/swag/posteriors/swag.py
+#     """
+#     state = particle.state
+#     pid = particle.pid
+#     # Gather
+#     mean_list = [param for param in particle.state[pid]["mom1"]]
+#     sq_mean_list = [param for param in particle.state[pid]["mom2"]]
 
-    scale_sqrt = scale ** 0.5
-    mean = flatten(mean_list)
-    sq_mean = flatten(sq_mean_list)
+#     scale_sqrt = scale ** 0.5
+#     mean = flatten(mean_list)
+#     sq_mean = flatten(sq_mean_list)
 
-    # Compute original loss
-    classes = {k: [0 for i in range(10)] for k in range(10)}
-    losses = []
-    for data, label in tqdm(dataloader):
-        pred = detach_to_cpu(particle.forward(data).wait())
-        loss = loss_fn(pred, label)
-        cls = pred.softmax(dim=1).argmax(dim=1)
-        for x, y in zip(cls, label):
-            classes[y.item()][x.item()] += 1
-        losses += [loss.detach().to("cpu")]
-    if state["args"].wandb:
-        wandb.log({
-            f"orig_loss{pid}": torch.mean(torch.tensor(losses)),
-            f"orig_dist{pid}": str(classes)
-        })
+#     # Compute original loss
+#     classes = {k: [0 for i in range(10)] for k in range(10)}
+#     losses = []
+#     for data, label in tqdm(dataloader):
+#         pred = detach_to_cpu(particle.forward(data).wait())
+#         loss = loss_fn(pred, label)
+#         cls = pred.softmax(dim=1).argmax(dim=1)
+#         for x, y in zip(cls, label):
+#             classes[y.item()][x.item()] += 1
+#         losses += [loss.detach().to("cpu")]
+#     if state["args"].wandb:
+#         wandb.log({
+#             f"orig_loss{pid}": torch.mean(torch.tensor(losses)),
+#             f"orig_dist{pid}": str(classes)
+#         })
 
-    for _ in range(num_samples):
-        # draw diagonal variance sample
-        var = torch.clamp(sq_mean - mean ** 2, var_clamp)
-        var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
+#     for _ in range(num_samples):
+#         # draw diagonal variance sample
+#         var = torch.clamp(sq_mean - mean ** 2, var_clamp)
+#         var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
 
-        rand_sample = var_sample
+#         rand_sample = var_sample
 
-        # Update sample with mean and scale
-        sample = mean + scale_sqrt * rand_sample
-        sample = sample.unsqueeze(0)
+#         # Update sample with mean and scale
+#         sample = mean + scale_sqrt * rand_sample
+#         sample = sample.unsqueeze(0)
 
-        # Update
-        samples_list = unflatten_like(sample, mean_list)
+#         # Update
+#         samples_list = unflatten_like(sample, mean_list)
 
-        # with torch.no_grad():
-        #     for param, sample in zip(particle.module.parameters(), samples_list):
-        #         param.copy_(sample)
-        for param, sample in zip(particle.module.parameters(), samples_list):
-            param.data = sample
+#         for param, sample in zip(particle.module.parameters(), samples_list):
+#             param.data = sample
 
-        classes = {k: [0 for i in range(10)] for k in range(10)}
-        swag_losses = []
-        for data, label in tqdm(dataloader):
-            pred = detach_to_cpu(particle.forward(data).wait())
-            cls = pred.softmax(dim=1).argmax(dim=1)
-            for x, y in zip(cls, label):
-                classes[y.item()][x.item()] += 1
-            loss = loss_fn(pred, label)
-            swag_losses += [loss.detach().to("cpu")]
+#         classes = {k: [0 for i in range(10)] for k in range(10)}
+#         swag_losses = []
+#         for data, label in tqdm(dataloader):
+#             pred = detach_to_cpu(particle.forward(data).wait())
+#             cls = pred.softmax(dim=1).argmax(dim=1)
+#             for x, y in zip(cls, label):
+#                 classes[y.item()][x.item()] += 1
+#             loss = loss_fn(pred, label)
+#             swag_losses += [loss.detach().to("cpu")]
 
-        if state["args"].wandb:
-            wandb.log({
-                f"swag_loss{pid}": torch.mean(torch.tensor(swag_losses)),
-                f"classes_dist{pid}": str(classes)
-            })
+#         if state["args"].wandb:
+#             wandb.log({
+#                 f"swag_loss{pid}": torch.mean(torch.tensor(swag_losses)),
+#                 f"classes_dist{pid}": str(classes)
+#             })

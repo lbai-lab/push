@@ -1,21 +1,18 @@
 import argparse
 from functools import partial
-from timeit import default_timer
 import numpy as np
 from typing import *
 
-from push.bayes.utils import flatten, unflatten_like
-from push.lib.utils import detach_to_cpu, to_device
 import push.bayes.ensemble
 import push.bayes.swag
 import push.bayes.stein_vgd
 
-from infer.standard import train_standard, test_standard
-from infer.ensemble import train_deep_ensemble, test_deep_ensemble
+from infer.standard import train_standard
+from infer.ensemble import train_deep_ensemble
 from infer.mswag import train_mswag
-from infer.stein_vgd import train_svgd, test_svgd
+from infer.stein_vgd import train_svgd
 from infer.push_ensemble import _ensemble_main_instrumented, mk_optim
-from infer.push_mswag import _mswag_particle_instrumented, _mswag_sample_instrumented2, _mswag_sample
+from infer.push_mswag import _mswag_particle_instrumented, _mswag_sample_entry_instrumented, _mswag_sample_instrumented
 from infer.push_stein_vgd import _svgd_leader_instrumented, _svgd_leader_instrumented_memeff
 
 from train_util import training_params, get_model, get_model_and_args
@@ -40,7 +37,6 @@ if __name__ == "__main__":
                             "schnet",
                             "cgcnn",
                             "unet",
-                            "fno",
                             "resnet",
                             "cnn",
                             "transformer",
@@ -68,7 +64,7 @@ if __name__ == "__main__":
     # [SWAG params]
     parser.add_argument("-pe", "--pretrain_epochs", type=int, default=1)
     parser.add_argument("-se", "--swag_epochs", type=int, default=1)
-    parser.add_argument("-samples", "--samples", type=int, default=20)
+    parser.add_argument("-samples", "--samples", type=int, default=5)
     parser.add_argument("-scale", "--scale", type=float, default=1.0)
     parser.add_argument("-var_clamp", "--var_clamp", type=float, default=1e-30)
 
@@ -123,7 +119,7 @@ if __name__ == "__main__":
             model, *model_args,
             num_devices=args.devices, lr=args.learning_rate,
             mswag_entry=_mswag_particle_instrumented, mswag_state=mswag_state,
-            f_save=args.save, mswag_sample_entry=_mswag_sample_instrumented2, mswag_sample=_mswag_sample
+            f_save=args.save, mswag_sample_entry=_mswag_sample_entry_instrumented, mswag_sample=_mswag_sample_instrumented
         )
         if args.posterior_pred:
             mswag.posterior_pred(test_loader, loss_fn, num_samples=args.samples , scale=args.scale, var_clamp=args.var_clamp)

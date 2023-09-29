@@ -39,12 +39,12 @@ def _swag_swag(particle: Particle, reset: bool) -> None:
     state = particle.state
     if reset:
         state[particle.pid] = {
-            "mom1": [param for param in particle.module.parameters()], # {name: param for name, param in particle.module.named_parameters()},
-            "mom2": [param*param for param in particle.module.parameters()] # {name: param * param for name, param in particle.module.named_parameters()}
+            "mom1": [param for param in particle.module.parameters()],
+            "mom2": [param*param for param in particle.module.parameters()]
         }
     else:
-        params = [param for param in particle.module.parameters()]  # {name: param for name, param in particle.module.named_parameters()}
-        params_sq = [param*param for param in particle.module.parameters()]  # {name: param*param for name, param in particle.module.named_parameters()}
+        params = [param for param in particle.module.parameters()]
+        params_sq = [param*param for param in particle.module.parameters()]
         update_theta(state[particle.pid]["mom1"], state[particle.pid]["mom2"], params, params_sq, state["n"])
         state["n"] += 1
 

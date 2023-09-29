@@ -13,7 +13,6 @@ import push.bayes.stein_vgd as svgd
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
 from push.lib.utils import detach_to_cpu, to_device
-from nns.fno.fnoWrap import FNO1dWrap
 import sys
 sys.path.append('../')
 from train_util import wandb_init, MyTimer

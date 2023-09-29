@@ -1,8 +1,6 @@
 
-import torch
 import torch.nn as nn
 from nns.unet.unet import UNet1d
-import push.bayes.stein_vgd as svgd
 
 
 class UNet1dWrap(nn.Module):

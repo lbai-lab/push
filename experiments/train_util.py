@@ -31,8 +31,6 @@ import torchvision.datasets as datasets
 from torchvision.transforms import ToTensor
 import torchvision.transforms as transforms
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 # =============================================================================
 # Dataloader Collate

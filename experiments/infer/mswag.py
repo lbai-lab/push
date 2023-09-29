@@ -24,11 +24,6 @@ def update_theta(theta, theta2, tt, tt2, n):
     for param in theta.keys():
         theta[param] = (theta[param]*n+tt[param])/(n+1)
         theta2[param] = (theta2[param]*n+tt2[param])/(n+1)
-        # Add dev back to parameters and return once we figure out full swag apprx
-        # dev[param] = torch.cat((dev[param], (tt[param]-theta[param]).view(1,-1)), axis=0)
-        # if len(dev[param]) > 20: 
-        #     dev[param] = dev[param][1:]
-        #     assert len(dev[param]) == 20
 
     return theta, theta2
 

@@ -274,4 +274,3 @@ def _mswag_sample_instrumented(particle: Particle,
                 f"swag_loss{pid}": torch.mean(torch.tensor(swag_losses)),
                 f"classes_dist{pid}": str(classes)
             })
-            

@@ -28,6 +28,8 @@ def _swag_sample2(particle: Particle,
                   scale: float,
                   var_clamp: float,
                   num_samples: int) -> None:
+    """Inspired by https://github.com/wjmaddox/swa_gaussian/blob/master/swag/posteriors/swag.py
+    """
     pid = particle.pid
     # Gather
     mean_list = [param for name, param in particle.state[pid]["mom1"].items()]

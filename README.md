@@ -44,4 +44,4 @@ Add your own BDL algorithms in `/push/bayes` by extending the `Infer` class.
 
 ## Experiments
 
-1. See `./experiments/README.md` for more detail.s
+1. See `./experiments/README.md` for more details.

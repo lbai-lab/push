@@ -28,23 +28,18 @@ pip install -e .
     cd experiments/data
     python download_direct.py --root_folder /home/paperspace/PusH2/experiments/data --pde_name advection
     ```
-3. Run experiments
-
+3. Quick test
 ```
-python train_qchem.py -model schnet -t swag_push
-python train_qchem.py -model schnet -t svgd_push
-
-python train_qchem.py -model cgcnn -t swag_push
-python train_qchem.py -model cgcnn -t svgd_push
+./quick_test.sh
 ```
-
 
 ## Usage
 
 1. See `paperspace_train_all_devices_1.sh`, `paperspace_train_all_devices_2.sh`, `paperspace_train_all_devices_3.sh`
-   to test networks.
-2. See `size_scale.sh`, `size_scale2.sh`, `size_scale4.sh` to test scaling.
+   to test scaling of particles across architectures, devices, and tasks.
+2. See `size_scale.sh`, `size_scale2.sh`, `size_scale4.sh` to test scaling of PusH on various transformers of various depths.
 3. See `train_baseline.sh` to test baseline implementations.
+4. See `bayes_1.sh` and `bayes_2.sh` to test multi-SWAG on transformers of various depths and widths.
 
 
 ## Models

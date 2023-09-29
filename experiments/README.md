@@ -49,5 +49,3 @@ pip install -e .
 3. CGCNN: https://arxiv.org/pdf/1710.10324.pdf
 4. ResNet: https://arxiv.org/abs/1512.03385
 5. Vision Transformer: https://arxiv.org/abs/2010.11929
-
-

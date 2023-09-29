@@ -203,13 +203,11 @@ class NodeEventLoop(Waitable):
             # Handle message
             sender, pid, msg_name = msg.pid_fid, msg.pid_to, msg.msg
             if msg_name in self._hooks[pid]:
-                # fn, state = self._hooks[pid][msg_name]
                 fn = self._hooks[pid][msg_name]
                 state = self._particle_to_state[pid]
                 pid_device = self._particle_to_device[pid]
                 module = self._context_switch_module(pid)
                 particle = Particle(self, pid_device, pid, module, state)
-                # fn(particle, *msg.args)
                 try:
                     y = fn(particle, *msg.args)
                 except Exception as e:
@@ -312,7 +310,6 @@ class NodeEventLoop(Waitable):
             
             # NOTE: Execute function on main node event loop.
             #       Compute heavy items are run on separate threads.
-            # fn, state = self._hooks[pid][msg_name]
             fn = self._hooks[pid][msg_name]
             state = self._particle_to_state[pid]
             pid_device = self._particle_to_device[pid]
@@ -412,9 +409,6 @@ class NodeEventLoop(Waitable):
 
         # Context switch
         module = self._context_switch_module(pid, msg='zero_grad')
-        # # Functionality for zero grad
-        # module.zero_grad()
-        # self._results[fid] = None
 
         # Launch thread
         t = threading.Thread(target=worker, args=(module,))
@@ -442,8 +436,6 @@ class NodeEventLoop(Waitable):
 
         # Context switch
         module = self._context_switch_module(pid, msg='forward')
-        # y = module.forward(x, *args)
-        # self._results[fid] = y
 
         # Launch thread
         t = threading.Thread(target=worker, args=(module,))

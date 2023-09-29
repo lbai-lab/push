@@ -37,7 +37,7 @@ pip install -e .
 
 1. See `paperspace_train_all_devices_1.sh`, `paperspace_train_all_devices_2.sh`, `paperspace_train_all_devices_3.sh`
    to test scaling of particles across architectures, devices, and tasks.
-2. See `size_scale.sh`, `size_scale2.sh`, `size_scale4.sh` to test scaling of PusH on various transformers of various depths.
+2. See `size_scale_1.sh`, `size_scale_2.sh`, `size_scale_4.sh` to test scaling of PusH on various transformers of various depths.
 3. See `train_baseline.sh` to test baseline implementations.
 4. See `bayes_1.sh` and `bayes_2.sh` to test multi-SWAG on transformers of various depths and widths.
 

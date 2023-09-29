@@ -1,17 +1,15 @@
-import argparse
-from datetime import datetime
-import pytz
 import torch
 from timeit import default_timer
-import time
 from tqdm import tqdm
 from typing import *
-import sys
-sys.path.append('../')
 import wandb
 
 from push.lib.utils import detach_to_cpu, to_device
+
+import sys
+sys.path.append('../')
 from train_util import get_model
+
 
 
 # =============================================================================

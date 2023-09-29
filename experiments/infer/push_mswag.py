@@ -1,22 +1,13 @@
-import argparse
-from datetime import datetime
-import pytz
-import numpy as np
+from torch.utils.data import DataLoader
 import torch
-import torch.nn as nn
-from timeit import default_timer
-import time
 from tqdm import tqdm
 from typing import *
-from torch.utils.data import DataLoader
 import wandb
-
 
 import push.bayes.swag as swag
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
-from push.lib.utils import detach_to_cpu, to_device
-from train_util import get_model
+from push.lib.utils import detach_to_cpu
 
 
 import sys

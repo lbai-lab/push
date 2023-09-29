@@ -1,17 +1,12 @@
-import argparse
-from datetime import datetime
-import pytz
 import torch
-from timeit import default_timer
-import time
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 import wandb
 from typing import *
-from torch.utils.data import DataLoader
 
 import push.bayes.stein_vgd as svgd
 from push.particle import Particle
-from push.bayes.utils import flatten, unflatten_like
+from push.bayes.utils import flatten
 from push.lib.utils import detach_to_cpu
 
 import sys

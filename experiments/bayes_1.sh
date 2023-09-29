@@ -1,4 +1,4 @@
-# python train.py -wb -g bayes4 --model transformer2 -t mswag_push -n 1 -d 1 --pretrain_epochs 7 --swag_epochs 3 --num_heads 12 --num_layers 24 --mlp_dim 3072 --hidden_dim 768 -save -ppred || true   # 1
+python train.py -wb -g bayes4 --model transformer2 -t mswag_push -n 1 -d 1 --pretrain_epochs 7 --swag_epochs 3 --num_heads 12 --num_layers 24 --mlp_dim 3072 --hidden_dim 768 -save -ppred || true   # 1
 python train.py -wb -g bayes_wide --model transformer2 -t mswag_push -n 2 -d 1 --pretrain_epochs 7 --swag_epochs 3 --num_heads 12 --num_layers 12 --mlp_dim 3072 --hidden_dim 768 -save -ppred || true   # 2
 python train.py -wb -g bayes_wide --model transformer2 -t mswag_push -n 4 -d 1 --pretrain_epochs 7 --swag_epochs 3 --num_heads 12 --num_layers 12 --mlp_dim 1536 --hidden_dim 768 -save -ppred || true   # 4
 python train.py -wb -g bayes_wide --model transformer2 -t mswag_push -n 8 -d 1 --pretrain_epochs 7 --swag_epochs 3 --num_heads 12 --num_layers 12 --mlp_dim 1536 --hidden_dim 384 -save -ppred || true   # 8

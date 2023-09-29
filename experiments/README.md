@@ -9,7 +9,7 @@ Testing performance of PusH on various networks.
 ```
 conda create -n push_exp python=3.10
 conda activate push_exp
-pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision h5py pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
+pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision torchvision h5py pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
 pip install -e .
 ```
 2. Download data

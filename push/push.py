@@ -12,11 +12,11 @@ from push.pfuture import PFuture
     
 
 def init_node_event_loop(mk_module: Callable,
-                         args: list[any],
-                         in_queues: dict[int, Queue],
-                         out_queues: dict[int, Queue],
+                         args: List[any],
+                         in_queues: Dict[int, Queue],
+                         out_queues: Dict[int, Queue],
                          rank: int,
-                         devices: list[int],
+                         devices: List[int],
                          cache_size: int,
                          view_size: int) -> None:
     nel = NodeEventLoop(mk_module, args, in_queues[rank], out_queues[rank], rank, devices, cache_size, view_size)
@@ -120,7 +120,7 @@ class PusH(Waitable):
         self._particle_to_futures[pid] += [fid]
         self._future_to_particle[fid] = pid
 
-    def _pwait(self, fids: list[int]) -> dict[int, any]:
+    def _pwait(self, fids: List[int]) -> Dict[int, any]:
         remaining = set(fids)
         acc = {}
         def loop():
@@ -302,3 +302,4 @@ class PusH(Waitable):
         else:
             # return fid
             return PFuture(self, -1, pid, fid)
+        

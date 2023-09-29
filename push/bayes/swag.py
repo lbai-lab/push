@@ -5,9 +5,8 @@ import torch
 
 from push.bayes.infer import Infer
 from push.particle import Particle
-import push.push as ppush
 from push.bayes.utils import flatten, unflatten_like
-from push.lib.utils import detach_to_cpu, to_device
+from push.lib.utils import detach_to_cpu
 
 
 # =============================================================================

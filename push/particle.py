@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from typing import *
 
-from push.lib.utils import detach_to_device, to_device
+from push.lib.utils import detach_to_device
 from push.lib.waitable import Waitable
 from push.pfuture import PFuture
 

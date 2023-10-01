@@ -2,9 +2,9 @@
 
 # -- Project information
 
-project = 'Lumache'
+project = 'push'
 copyright = '2021, Graziella'
-author = 'Graziella'
+author = 'Dan Huang, Chris Camano, Jonathan Tsegaye, Jonathan Jones'
 
 release = '0.1'
 version = '0.1.0'

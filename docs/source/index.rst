@@ -1,75 +1,41 @@
-.. GPyTorch documentation master file, created by
-   sphinx-quickstart on Tue Aug 21 09:04:16 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Push documentation
+========
 
-:github_url: https://github.com/cornellius-gp/gpytorch
+$project will solve your problem of where to start with documentation,
+by providing a basic explanation of how to do it easily.
 
-GPyTorch's documentation
-====================================
+Look how easy it is to use:
 
-.. toctree::
-   :glob:
-   :maxdepth: 1
-   :caption: Tutorials:
+    import project
+    # Get your stuff done
+    project.do_stuff()
 
-   examples/01_Exact_GPs/Simple_GP_Regression.ipynb
+Features
+--------
 
-.. toctree::
-   :glob:
-   :maxdepth: 2
-   :caption: Examples:
+- Be awesome
+- Make things faster
 
-   examples/**/index
+Installation
+------------
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Package Reference
+Install $project by running:
 
-   models
-   likelihoods
-   kernels
-   keops_kernels
-   means
-   marginal_log_likelihoods
-   metrics
-   constraints
-   distributions
-   priors
-   variational
-   optim
+    install project
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Settings and Beta Features
+Contribute
+----------
 
-   settings
-   beta_features
+- Issue Tracker: github.com/$project/$project/issues
+- Source Code: github.com/$project/$project
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Advanced Package Reference
+Support
+-------
 
-   module
-   functions
-   utils
+If you are having issues, please let us know.
+We have a mailing list located at: project@google-groups.com
 
+License
+-------
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
-Research references
-======================
-
-* Gardner, Jacob R., Geoff Pleiss, David Bindel, Kilian Q. Weinberger, and Andrew Gordon Wilson. " GPyTorch: Blackbox Matrix-Matrix Gaussian Process Inference with GPU Acceleration." In NeurIPS (2018).
-* Pleiss, Geoff, Jacob R. Gardner, Kilian Q. Weinberger, and Andrew Gordon Wilson. "Constant-Time Predictive Distributions for Gaussian Processes." In ICML (2018).
-* Gardner, Jacob R., Geoff Pleiss, Ruihan Wu, Kilian Q. Weinberger, and Andrew Gordon Wilson. "Product Kernel Interpolation for Scalable Gaussian Processes." In AISTATS (2018).
-* Wilson, Andrew G., Zhiting Hu, Ruslan R. Salakhutdinov, and Eric P. Xing. "Stochastic variational deep kernel learning." In NeurIPS (2016).
-* Wilson, Andrew, and Hannes Nickisch. "Kernel interpolation for scalable structured Gaussian processes (KISS-GP)." In ICML (2015).
-* Hensman, James, Alexander G. de G. Matthews, and Zoubin Ghahramani. "Scalable variational Gaussian process classification." In AISTATS (2015).
+The project is licensed under the BSD license.

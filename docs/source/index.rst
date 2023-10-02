@@ -10,6 +10,13 @@ Push's documentation
 .. toctree::
    :glob:
    :maxdepth: 2
+   :caption: Tutorials:
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
    :caption: Examples:
 
    examples/**/index
+
+

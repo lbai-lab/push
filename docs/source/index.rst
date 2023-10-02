@@ -20,10 +20,11 @@ Contents
 
    usage
    api
+   test
 
 .. toctree::
    :glob:
    :maxdepth: 2
    :caption: Examples:
 
-   examples/**/index
+   examples/**/index.rst

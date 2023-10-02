@@ -20,3 +20,10 @@ Contents
 
    usage
    api
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
+   :caption: Examples:
+
+   examples/**/index

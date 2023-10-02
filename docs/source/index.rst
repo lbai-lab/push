@@ -7,6 +7,7 @@
 
 Push's documentation
 ====================================
+
 .. toctree::
    :glob:
    :maxdepth: 2

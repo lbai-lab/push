@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 120
+
+[tool.usort.known]
+first_party = ["push"]
+
+[tool.setuptools_scm]
+local_scheme = "node-and-date"
+write_to = "./push/version.py"

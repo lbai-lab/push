@@ -17,6 +17,6 @@ Push's documentation
    :maxdepth: 2
    :caption: Examples:
 
-   examples/**/index
+..    examples/**/index
 
 

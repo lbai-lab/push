@@ -9,13 +9,6 @@ Push's documentation
 ====================================
 .. toctree::
    :glob:
-   :maxdepth: 1
-   :caption: Tutorials:
-
-   examples/01_Running/Running.ipynb
-
-.. toctree::
-   :glob:
    :maxdepth: 2
    :caption: Examples:
 

@@ -7,3 +7,6 @@ This folder contains notebooks for basic usage of the package, e.g. things like 
    :hidden:
 
    Training.ipynb
+
+.. _Tutorial on Training:
+  Training.ipynb

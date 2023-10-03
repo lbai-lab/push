@@ -17,7 +17,7 @@ Contents
 --------
 
 .. toctree::
-
+   ensemble
    usage
    test
 

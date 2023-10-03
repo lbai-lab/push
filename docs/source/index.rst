@@ -23,6 +23,10 @@ Contents
    test
 
 .. toctree::
+
+   Hyperparameters
+
+.. toctree::
    :glob:
    :maxdepth: 2
    :caption: Examples:

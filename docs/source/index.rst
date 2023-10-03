@@ -22,9 +22,6 @@ Contents
    api
    test
 
-.. toctree::
-
-   Hyperparameters
 
 .. toctree::
    :glob:

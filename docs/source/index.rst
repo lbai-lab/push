@@ -27,4 +27,4 @@ Contents
    :maxdepth: 2
    :caption: Examples:
 
-   examples/**/index.rst
+   examples/**/index

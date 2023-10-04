@@ -1,4 +1,4 @@
-Basic Usage
+Deep Ensemble
 ==============
 
 This folder contains notebooks for basic usage of the package, e.g. things like dealing with hyperparameters,

@@ -22,3 +22,10 @@ Tutorial
    :caption: Tutorials:
 
    examples/01_Deep_Ensemble/Deep_Ensemble.ipynb
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
+   :caption: Examples:
+
+   examples/**/index

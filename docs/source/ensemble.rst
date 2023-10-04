@@ -1,7 +1,7 @@
 .. role:: hidden
     :class: hidden-section
 
-gpytorch.models
+push.models
 ===================================
 
 .. automodule:: gpytorch.models

@@ -20,9 +20,11 @@ how to :ref:`installation` the project.
 
    examples/**/index
 
+Package Reference
+===================
+
 .. toctree::
    :maxdepth: 1
-   :caption: Package Reference
+   :caption: push.bayes
 
-   * push.bayes
-      * ensemble
+   ensemble

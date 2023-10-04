@@ -1,9 +1,9 @@
 .. role:: hidden
     :class: hidden-section
 
-ensemble
+stein_vgd
 ===================================
 
-.. automodule:: ensemble
-.. currentmodule:: ensemble
+.. automodule:: stein_vgd
+.. currentmodule:: stein_vgd
 

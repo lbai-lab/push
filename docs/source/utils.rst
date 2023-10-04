@@ -1,9 +1,9 @@
 .. role:: hidden
     :class: hidden-section
 
-ensemble
+utils
 ===================================
 
-.. automodule:: ensemble
-.. currentmodule:: ensemble
+.. automodule:: utils
+.. currentmodule:: utils
 

@@ -1,9 +1,9 @@
 .. role:: hidden
     :class: hidden-section
 
-ensemble
+infer
 ===================================
 
-.. automodule:: ensemble
-.. currentmodule:: ensemble
+.. automodule:: infer
+.. currentmodule:: infer
 

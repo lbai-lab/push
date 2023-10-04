@@ -28,3 +28,7 @@ Package Reference
    :caption: push.bayes
 
    ensemble
+   infer
+   stein_vgd
+   swag
+   utils

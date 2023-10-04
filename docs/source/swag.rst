@@ -1,9 +1,9 @@
 .. role:: hidden
     :class: hidden-section
 
-ensemble
+swag
 ===================================
 
-.. automodule:: ensemble
-.. currentmodule:: ensemble
+.. automodule:: swag
+.. currentmodule:: swag
 

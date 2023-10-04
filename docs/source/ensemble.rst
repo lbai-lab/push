@@ -1,11 +1,11 @@
 .. role:: hidden
     :class: hidden-section
 
-push.models
+ensemble
 ===================================
 
-.. automodule:: gpytorch.models
-.. currentmodule:: gpytorch.models
+.. automodule:: ensemble
+.. currentmodule:: ensemble
 
 
 Models for Exact GP Inference

@@ -13,18 +13,12 @@ how to :ref:`installation` the project.
 
    This project is under active development.
 
-Contents
+Tutorial
 --------
 
 .. toctree::
-   ensemble
-   usage
-   test
-
-
-.. toctree::
    :glob:
-   :maxdepth: 2
-   :caption: Examples:
+   :maxdepth: 1
+   :caption: Tutorials:
 
-   examples/**/index
+   examples/01_Deep_Ensemble/Deep_Ensemble.ipynb

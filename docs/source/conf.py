@@ -29,10 +29,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    "nbsphinx",
-    "autoapi.extension"
+    "nbsphinx"
 ]
-autoapi_dirs = ['../../push/bayes', 'src']
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),

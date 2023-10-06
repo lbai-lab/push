@@ -46,3 +46,4 @@ html_theme = 'sphinx_rtd_theme'
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
+autosummary_generate = True  # Turn on sphinx.ext.autosummary

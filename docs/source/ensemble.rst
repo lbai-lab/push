@@ -1,11 +1,11 @@
 .. role:: hidden
     :class: hidden-section
 
-ensemble
+push.bayes
 ===================================
 
-.. automodule:: ensemble
-.. currentmodule:: ensemble
+.. automodule:: push.bayes
+.. currentmodule:: push.bayes
 
 Models for Ensembles
 -----------------------------

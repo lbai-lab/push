@@ -15,13 +15,13 @@ push Documentation
 Package Reference
 ===================
 
-.. toctree::
+.. toctree:: _autosummary
    :maxdepth: 1
    :caption: push.bayes
 
    bayes_modules
 
-.. toctree::
+.. toctree:: _autosummary
    :maxdepth: 1
    :caption: push.lib
 

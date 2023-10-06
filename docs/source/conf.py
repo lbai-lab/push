@@ -12,7 +12,7 @@ print("os.path.abspath(os.path.join(__file__, ../..))",os.path.abspath( os.path.
 ))
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.append(os.path.abspath(
-    os.path.join(__file__, "../..")
+    os.path.join(__file__, "../../..")
 ))
 
 

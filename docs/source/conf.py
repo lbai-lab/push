@@ -6,8 +6,8 @@
 import os
 import sys
 # sys.path.insert(0, os.path.abspath('../../'))
-print("CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======S")
-print(os.getcwd())
+# print("CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======S")
+# print(os.getcwd())
 print("os.path.abspath(os.path.join(__file__, ../..))",os.path.abspath( os.path.join(__file__, "../../..")
 ))
 sys.path.insert(0, os.path.abspath('..'))
@@ -37,7 +37,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     "nbsphinx"
 ]
-# autodoc_mock_imports = ["django"]
+autodoc_mock_imports = ["tqdm"]
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),

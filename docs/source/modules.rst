@@ -1,7 +1,7 @@
-bayes
-=====
+push
+====
 
 .. toctree::
    :maxdepth: 4
 
-   bayes
+   push

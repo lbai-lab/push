@@ -22,6 +22,7 @@ def mk_optim(params):
 # =============================================================================
 
 def _deep_ensemble_main(particle: Particle, dataloader, loss_fn, epochs) -> None:
+    """deep ensemble main"""
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     # Training loop
     for e in tqdm(range(epochs)):
@@ -35,6 +36,7 @@ def _deep_ensemble_main(particle: Particle, dataloader, loss_fn, epochs) -> None
 
 
 def _ensemble_step(particle: Particle, loss_fn, data, label, *args) -> None:
+    """Step function"""
     particle.step(loss_fn, data, label, *args)
 
 

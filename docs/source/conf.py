@@ -37,7 +37,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     "nbsphinx"
 ]
-autodoc_mock_imports = ["tqdm"]
+autodoc_mock_imports = ["tqdm","numpy"]
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),

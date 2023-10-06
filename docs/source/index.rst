@@ -19,6 +19,7 @@ Package Reference
    :maxdepth: 1
    :caption: push.bayes
 
+   modules
    ensemble
    infer
    stein_vgd

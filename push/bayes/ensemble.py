@@ -39,6 +39,7 @@ def _ensemble_step(particle: Particle, loss_fn, data, label, *args) -> None:
 
 
 class Ensemble(Infer):
+    """An Ensemble Class"""
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         super(Ensemble, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         

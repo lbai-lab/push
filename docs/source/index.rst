@@ -19,19 +19,10 @@ Package Reference
    :maxdepth: 1
    :caption: push.bayes
 
-   modules
-   ensemble
-   infer
-   stein_vgd
-   swag
-   utils
+   bayes_modules
 
 .. toctree::
    :maxdepth: 1
    :caption: push.lib
 
-   context_switch
-   messages
-   node_event_loop
-   utils
-   waitable
+   lib_modules

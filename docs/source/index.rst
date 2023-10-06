@@ -19,10 +19,10 @@ Package Reference
    :maxdepth: 1
    :caption: push.bayes
 
-   bayes_modules
+   modules
 
-.. toctree:: _autosummary
-   :maxdepth: 1
-   :caption: push.lib
+.. .. toctree:: _autosummary
+..    :maxdepth: 1
+..    :caption: push.lib
 
-   lib_modules
+..    lib_modules

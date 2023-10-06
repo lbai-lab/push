@@ -24,6 +24,7 @@ def mk_empty_optim(params):
 # -----------------------------------------------------
     
 def normal_prior(params: Iterable[torch.Tensor]) -> list[torch.Tensor]:
+    """normal prior"""
     normal = Normal(0.0, 1.0)
     grads = []
     for param in params:
@@ -38,11 +39,13 @@ def normal_prior(params: Iterable[torch.Tensor]) -> list[torch.Tensor]:
 # -----------------------------------------------------
 
 def torch_squared_exp_kernel(x: torch.Tensor, y: torch.Tensor, length_scale: float) -> torch.Tensor:
+    """torch  squared exp kernal"""
     diff = (x - y) / length_scale
     radius2 = torch.dot(diff, diff)
     return torch.exp(-0.5 * radius2)
 
 def torch_squared_exp_kernel_grad(x: torch.Tensor, y: torch.Tensor, length_scale: float) -> torch.Tensor:
+    """torch squared exp kernal grad"""
     prefactor = (x - y) / (length_scale ** 2)
     return -prefactor * torch_squared_exp_kernel(x, y, length_scale)
 
@@ -52,6 +55,7 @@ def torch_squared_exp_kernel_grad(x: torch.Tensor, y: torch.Tensor, length_scale
 # =============================================================================
 
 def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
+    """svgd leader"""
     n = len(particle.particle_ids())
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
@@ -97,6 +101,7 @@ def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, 
 
 
 def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
+    """svgd leader memeff"""
     n = len(particle.particle_ids())
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
@@ -155,10 +160,12 @@ def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscal
 
 
 def _svgd_step(particle: Particle, loss_fn: Callable, data: torch.Tensor, label: torch.Tensor) -> None:
+    """svgd step"""
     return particle.step(loss_fn, data, label)
 
 
 def _svgd_follow(particle: Particle, lr: float, update: List[torch.Tensor]) -> None:
+    """svgd follow"""
     # 1. Unflatten
     params = list(particle.module.parameters())
     updates = unflatten_like(update.unsqueeze(0), params)
@@ -170,6 +177,7 @@ def _svgd_follow(particle: Particle, lr: float, update: List[torch.Tensor]) -> N
 
 
 class SteinVGD(Infer):
+    """SteinVGD Class"""
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         super(SteinVGD, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         
@@ -199,6 +207,7 @@ def train_svgd(dataloader: DataLoader, loss_fn: Callable, epochs: int, num_parti
                lengthscale=1.0, lr=1e3, prior=None,
                num_devices=1, cache_size=4, view_size=4,
                svgd_entry=_svgd_leader, svgd_state={}) -> None:
+    """train svgd"""
     with SteinVGD(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size) as stein_vgd:
         stein_vgd.bayes_infer(dataloader, epochs,
                               prior=prior, loss_fn=loss_fn,

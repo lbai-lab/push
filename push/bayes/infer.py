@@ -21,16 +21,21 @@ class Infer:
         atexit.register(self._cleanup)
 
     def bayes_infer(self, dataloader: DataLoader, epochs: int, **kwargs) -> None:
+        """infer function"""
         raise NotImplementedError
     
     def p_parameters(self) -> List[List[torch.Tensor]]:
+        """returns parameters"""
         return [self.push_dist.p_parameters(pid) for pid in self.push_dist.particle_ids()]
 
     def _cleanup(self):
+        """cleanup functions"""
         self.push_dist._cleanup()
 
     def __enter__(self):
+        """enter function"""
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """exit function"""
         self.push_dist.__exit__(exc_type, exc_value, traceback)

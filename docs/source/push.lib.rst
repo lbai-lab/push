@@ -10,7 +10,7 @@ push.lib.context\_switch module
    :undoc-members:
    :show-inheritance:
 
-push.lib.messages module
+push.lib.messages 
 ------------------------
 
 .. automodule:: push.lib.messages
@@ -18,7 +18,7 @@ push.lib.messages module
    :undoc-members:
    :show-inheritance:
 
-push.lib.node\_event\_loop module
+push.lib.node\_event\_loop 
 ---------------------------------
 
 .. automodule:: push.lib.node_event_loop
@@ -26,7 +26,7 @@ push.lib.node\_event\_loop module
    :undoc-members:
    :show-inheritance:
 
-push.lib.utils module
+push.lib.utils 
 ---------------------
 
 .. automodule:: push.lib.utils
@@ -42,10 +42,3 @@ push.lib.waitable module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
-
-.. automodule:: push.lib
-   :members:
-   :undoc-members:
-   :show-inheritance:

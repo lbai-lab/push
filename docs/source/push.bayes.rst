@@ -1,8 +1,8 @@
-push.bayes package
+push.bayes
 ==================
 
 
-push.bayes.ensemble module
+push.bayes.ensemble
 --------------------------
 
 .. automodule:: push.bayes.ensemble
@@ -10,7 +10,7 @@ push.bayes.ensemble module
    :undoc-members:
    :show-inheritance:
 
-push.bayes.infer module
+push.bayes.infer
 -----------------------
 
 .. automodule:: push.bayes.infer
@@ -18,7 +18,7 @@ push.bayes.infer module
    :undoc-members:
    :show-inheritance:
 
-push.bayes.stein\_vgd module
+push.bayes.stein\_vgd
 ----------------------------
 
 .. automodule:: push.bayes.stein_vgd
@@ -26,7 +26,7 @@ push.bayes.stein\_vgd module
    :undoc-members:
    :show-inheritance:
 
-push.bayes.swag module
+push.bayes.swag 
 ----------------------
 
 .. automodule:: push.bayes.swag
@@ -34,18 +34,10 @@ push.bayes.swag module
    :undoc-members:
    :show-inheritance:
 
-push.bayes.utils module
+push.bayes.utils 
 -----------------------
 
 .. automodule:: push.bayes.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: push.bayes
    :members:
    :undoc-members:
    :show-inheritance:

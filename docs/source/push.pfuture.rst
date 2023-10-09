@@ -1,4 +1,4 @@
-push.pfuture module
+push.pfuture
 -------------------
 
 .. automodule:: push.pfuture

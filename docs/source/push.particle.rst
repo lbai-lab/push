@@ -1,4 +1,4 @@
-push.particle module
+push.particle
 --------------------
 
 .. automodule:: push.particle

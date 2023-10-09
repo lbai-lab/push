@@ -17,13 +17,19 @@ Package Reference
 
 .. toctree::
    :maxdepth: 1
-   :caption: push
 
-   push.lib
    push.bayes
    push.particle
    push.pfuture
+   
+
+
+
+Advanced Package Reference
+===================
+
+.. toctree::
+   :maxdepth: 1
+
+   push.lib
    push.push
-
-
-

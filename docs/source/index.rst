@@ -27,32 +27,23 @@ Package Reference
 
    push.lib
 
-push.particle module
---------------------
+.. toctree::
+   :maxdepth: 1
+   :caption: push.particle
 
-.. automodule:: push.particle
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   push.particle
 
-push.pfuture module
--------------------
+.. toctree::
+   :maxdepth: 1
+   :caption: push.pfuture
 
-.. automodule:: push.pfuture
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   push.pfuture
 
-push.push module
-----------------
+.. toctree::
+   :maxdepth: 1
+   :caption: push.push
 
-.. automodule:: push.push
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   push.push
 
 
-.. automodule:: push
-   :members:
-   :undoc-members:
-   :show-inheritance:
+

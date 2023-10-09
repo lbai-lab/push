@@ -34,8 +34,6 @@ push.push module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
 .. automodule:: push
    :members:

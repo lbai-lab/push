@@ -1,8 +1,6 @@
 push.lib package
 ================
 
-Submodules
-----------
 
 push.lib.context\_switch module
 -------------------------------

@@ -1,8 +1,6 @@
 push.bayes package
 ==================
 
-Submodules
-----------
 
 push.bayes.ensemble module
 --------------------------

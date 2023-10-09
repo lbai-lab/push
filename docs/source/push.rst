@@ -1,8 +1,6 @@
 push package
 ============
 
-Subpackages
------------
 
 .. toctree::
    :maxdepth: 4
@@ -10,8 +8,7 @@ Subpackages
    push.bayes
    push.lib
 
-Submodules
-----------
+
 
 push.particle module
 --------------------

@@ -17,6 +17,6 @@ Package Reference
 
 .. toctree::
    :maxdepth: 1
-   :caption:
+   :caption: push.bayes
 
    modules

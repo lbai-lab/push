@@ -17,32 +17,12 @@ Package Reference
 
 .. toctree::
    :maxdepth: 1
-   :caption: push.bayes
-
-   push.bayes
-
-.. toctree::
-   :maxdepth: 1
-   :caption: push.lib
+   :caption: push
 
    push.lib
-
-.. toctree::
-   :maxdepth: 1
-   :caption: push.particle
-
+   push.bayes
    push.particle
-
-.. toctree::
-   :maxdepth: 1
-   :caption: push.pfuture
-
    push.pfuture
-
-.. toctree::
-   :maxdepth: 1
-   :caption: push.push
-
    push.push
 
 

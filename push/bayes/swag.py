@@ -14,6 +14,7 @@ from push.lib.utils import detach_to_cpu
 # =============================================================================
 
 def mk_optim(params):
+    """returns Adam optimizer"""
     return torch.optim.Adam(params, lr=1e-5, weight_decay=1e-3)
 
 
@@ -26,7 +27,7 @@ def _swag_step(particle: Particle,
                data: torch.Tensor,
                label: torch.Tensor,
                *args: any) -> None:
-    """_swag_step"""
+    # calls one swag particle's step function
     particle.step(loss_fn, data, label,*args)
 
 
@@ -38,7 +39,7 @@ def update_theta(state, state_sq, param, param_sq, n):
 
 
 def _swag_swag(particle: Particle, reset: bool) -> None:    
-    """swag_swag"""
+    # if reset, initializes mom1 and mom2, else updates mom1 and mom2
     state = particle.state
     if reset:
         state[particle.pid] = {
@@ -54,7 +55,7 @@ def _swag_swag(particle: Particle, reset: bool) -> None:
 
 def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
                     pretrain_epochs: int, swag_epochs: int, swag_pids: list[int]) -> None:
-    """mswag_particle"""
+    # training function for mswag particle
     other_pids = [pid for pid in swag_pids if pid != particle.pid]
     
     # Pre-training loop
@@ -96,7 +97,7 @@ def _mswag_sample_entry(particle: Particle,
                         var_clamp: float,
                         num_samples: int,
                         num_models) -> None:
-    """mswag sample entry"""
+    # TODO comment explaining this function
     # Unpack state
     state = particle.state
     pid = particle.pid

@@ -13,6 +13,7 @@ from push.particle import Particle
 # =============================================================================
 
 def mk_optim(params):
+    """returns Adam optimizer"""
     # Limitiation must be global
     return torch.optim.Adam(params, lr=1e-5, weight_decay=1e-3)
 
@@ -22,7 +23,6 @@ def mk_optim(params):
 # =============================================================================
 
 def _deep_ensemble_main(particle: Particle, dataloader, loss_fn, epochs) -> None:
-    """deep ensemble main"""
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     # Training loop
     for e in tqdm(range(epochs)):
@@ -36,12 +36,11 @@ def _deep_ensemble_main(particle: Particle, dataloader, loss_fn, epochs) -> None
 
 
 def _ensemble_step(particle: Particle, loss_fn, data, label, *args) -> None:
-    """Step function"""
     particle.step(loss_fn, data, label, *args)
 
 
 class Ensemble(Infer):
-    """An Ensemble Class"""
+    """Ensemble class"""
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         super(Ensemble, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         

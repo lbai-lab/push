@@ -16,6 +16,7 @@ from push.bayes.utils import flatten, unflatten_like
 
 def mk_empty_optim(params):
     # Limitiation must be global
+    """returns empty optimizer"""
     return None
 
 
@@ -24,7 +25,7 @@ def mk_empty_optim(params):
 # -----------------------------------------------------
     
 def normal_prior(params: Iterable[torch.Tensor]) -> list[torch.Tensor]:
-    """normal prior"""
+    """returns grads"""
     normal = Normal(0.0, 1.0)
     grads = []
     for param in params:
@@ -55,7 +56,7 @@ def torch_squared_exp_kernel_grad(x: torch.Tensor, y: torch.Tensor, length_scale
 # =============================================================================
 
 def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
-    """svgd leader"""
+    # TODO comment explaining this function
     n = len(particle.particle_ids())
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
@@ -101,7 +102,7 @@ def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, 
 
 
 def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
-    """svgd leader memeff"""
+    # TODO comment explaining this function
     n = len(particle.particle_ids())
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
@@ -160,12 +161,12 @@ def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscal
 
 
 def _svgd_step(particle: Particle, loss_fn: Callable, data: torch.Tensor, label: torch.Tensor) -> None:
-    """svgd step"""
+    # TODO comment explaining this function
     return particle.step(loss_fn, data, label)
 
 
 def _svgd_follow(particle: Particle, lr: float, update: List[torch.Tensor]) -> None:
-    """svgd follow"""
+    # TODO comment explaining this function
     # 1. Unflatten
     params = list(particle.module.parameters())
     updates = unflatten_like(update.unsqueeze(0), params)
@@ -207,7 +208,7 @@ def train_svgd(dataloader: DataLoader, loss_fn: Callable, epochs: int, num_parti
                lengthscale=1.0, lr=1e3, prior=None,
                num_devices=1, cache_size=4, view_size=4,
                svgd_entry=_svgd_leader, svgd_state={}) -> None:
-    """train svgd"""
+    """SVGD training function"""
     with SteinVGD(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size) as stein_vgd:
         stein_vgd.bayes_infer(dataloader, epochs,
                               prior=prior, loss_fn=loss_fn,

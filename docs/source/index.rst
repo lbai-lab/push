@@ -11,7 +11,7 @@ Push Documentation
    :maxdepth: 2
    :caption: Tutorials
 
-   tutorials/01_Bayesian_Deep_Learning/Bayesian_Deep_Learning.ipynb
+   tutorials/**/index
 
 
 .. toctree::

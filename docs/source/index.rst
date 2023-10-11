@@ -19,24 +19,19 @@ Push Documentation
 
    examples/**/index
 
-Package Reference
-===================
-
 .. toctree::
    :maxdepth: 2
+   :caption: Package Reference
 
    push.bayes
    push.particle
    push.pfuture
-   
+   push.push
 
-
-
-Advanced Package Reference
-===================
 
 .. toctree::
    :maxdepth: 2
+   :caption: Advanced Package Reference
 
    push.lib
-   push.push
+   

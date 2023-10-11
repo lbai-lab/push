@@ -11,4 +11,4 @@ This folder contains notebooks for basic usage
    :maxdepth: 1
    :hidden:
 
-   bdl.ipynb
+   Bayesian_Deep_Learning.ipynb

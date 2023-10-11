@@ -21,7 +21,7 @@ sys.path.append(os.path.abspath(
 # -- Project information
 
 project = 'push'
-copyright = 'Placeholder Copyright'
+copyright = 'The Push authors'
 author = 'Daniel Huang'
 
 release = '0.1'

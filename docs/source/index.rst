@@ -7,10 +7,10 @@ Push Documentation
 
 .. toctree::
    :glob:
-   :maxdepth: 2
-   :caption: Tutorial
+   :maxdepth: 1
+   :caption: Tutorials
 
-   tutorials/**/index
+   tutorials/00_Bayesian_Deep_Learning/Bayesian_Deep_Learning.ipynb
 
 .. toctree::
    :glob:

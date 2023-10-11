@@ -1,43 +1,43 @@
-push.bayes
+Push.bayes
 ==================
 
 
-push.bayes.ensemble
+Push.bayes.ensemble
 --------------------------
 
-.. automodule:: push.bayes.ensemble
+.. automodule:: Push.bayes.ensemble
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.bayes.infer
+Push.bayes.infer
 -----------------------
 
-.. automodule:: push.bayes.infer
+.. automodule:: Push.bayes.infer
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.bayes.stein\_vgd
+Push.bayes.stein\_vgd
 ----------------------------
 
-.. automodule:: push.bayes.stein_vgd
+.. automodule:: Push.bayes.stein_vgd
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.bayes.swag 
+Push.bayes.swag 
 ----------------------
 
-.. automodule:: push.bayes.swag
+.. automodule:: Push.bayes.swag
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.bayes.utils 
+Push.bayes.utils 
 -----------------------
 
-.. automodule:: push.bayes.utils
+.. automodule:: Push.bayes.utils
    :members:
    :undoc-members:
    :show-inheritance:

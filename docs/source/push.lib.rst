@@ -1,43 +1,43 @@
-push.lib
+Push.lib
 ================
 
 
-push.lib.context\_switch module
+Push.lib.context\_switch module
 -------------------------------
 
-.. automodule:: push.lib.context_switch
+.. automodule:: Push.lib.context_switch
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.lib.messages 
+Push.lib.messages 
 ------------------------
 
-.. automodule:: push.lib.messages
+.. automodule:: Push.lib.messages
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.lib.node\_event\_loop 
+Push.lib.node\_event\_loop 
 ---------------------------------
 
-.. automodule:: push.lib.node_event_loop
+.. automodule:: Push.lib.node_event_loop
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.lib.utils 
+Push.lib.utils 
 ---------------------
 
-.. automodule:: push.lib.utils
+.. automodule:: Push.lib.utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-push.lib.waitable module
+Push.lib.waitable module
 ------------------------
 
-.. automodule:: push.lib.waitable
+.. automodule:: Push.lib.waitable
    :members:
    :undoc-members:
    :show-inheritance:

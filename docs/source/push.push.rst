@@ -1,7 +1,7 @@
-Push.Push
+push.push
 ----------------
 
-.. automodule:: Push.Push
+.. automodule:: push.push
    :members:
    :undoc-members:
    :show-inheritance:

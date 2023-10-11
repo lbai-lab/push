@@ -1,7 +1,7 @@
-Push.particle
+push.particle
 --------------------
 
-.. automodule:: Push.particle
+.. automodule:: push.particle
    :members:
    :undoc-members:
    :show-inheritance:

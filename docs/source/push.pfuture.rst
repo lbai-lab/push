@@ -1,7 +1,7 @@
-Push.pfuture
+push.pfuture
 -------------------
 
-.. automodule:: Push.pfuture
+.. automodule:: push.pfuture
    :members:
    :undoc-members:
    :show-inheritance:

@@ -25,9 +25,9 @@ Package Reference
 .. toctree::
    :maxdepth: 2
 
-   Push.bayes
-   Push.particle
-   Push.pfuture
+   push.bayes
+   push.particle
+   push.pfuture
    
 
 
@@ -38,5 +38,5 @@ Advanced Package Reference
 .. toctree::
    :maxdepth: 2
 
-   Push.lib
-   Push.Push
+   push.lib
+   push.push

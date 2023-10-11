@@ -14,4 +14,4 @@ This folder contains tutorials for Bayesian Deep Learning with Push.
    Bayesian_Deep_Learning.ipynb
 
 .. _Bayesian Deep Learning:
-   ./Bayesian_Deep_Learning.ipyb
+   ./Bayesian_Deep_Learning.ipynb

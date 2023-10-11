@@ -1,10 +1,10 @@
-BDL
+Bayesian Deep Learning
 ==============
 
-This folder contains notebooks for basic usage 
+This folder contains tutorials for Bayesian Deep Learning with Push.
 
 
-- Check our `bdl`_ tutorial
+- Check our `Bayesian_Deep_Learning`_ tutorial
 
 
 .. toctree::

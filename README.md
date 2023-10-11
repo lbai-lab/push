@@ -9,6 +9,9 @@ enables a probabilistic programming approach to Bayesian deep learning (BDL).
 2. Inference procedures are defined as concurrent procedures on particles via message-passing.
 3. Primary use case is BDL.
 
+## Documentation
+https://lbai-push.readthedocs.io/en/latest/
+
 
 ## Installation
 

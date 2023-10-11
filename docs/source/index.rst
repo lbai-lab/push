@@ -8,7 +8,7 @@ push Documentation
 .. toctree::
    :glob:
    :maxdepth: 2
-   :caption: Tutorial:
+   :caption: Tutorial
 
    examples/**/index
 

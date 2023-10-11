@@ -1,5 +1,5 @@
 Bayesian Deep Learning
-==============
+=======================
 
 This folder contains tutorials for Bayesian Deep Learning with Push.
 

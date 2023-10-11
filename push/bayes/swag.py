@@ -14,6 +14,7 @@ from push.lib.utils import detach_to_cpu
 # =============================================================================
 
 def mk_optim(params):
+    """returns Adam optimizer"""
     return torch.optim.Adam(params, lr=1e-5, weight_decay=1e-3)
 
 
@@ -26,16 +27,19 @@ def _swag_step(particle: Particle,
                data: torch.Tensor,
                label: torch.Tensor,
                *args: any) -> None:
+    # calls one swag particle's step function
     particle.step(loss_fn, data, label,*args)
 
 
 def update_theta(state, state_sq, param, param_sq, n):
+    """update_theta"""
     for st, st_sq, p, p_sq in zip(state, state_sq, param, param_sq):
         st.data = (st.data * n + p.data)/(n+1)
         st_sq.data = (st_sq.data * n + p_sq.data)/(n+1)
 
 
 def _swag_swag(particle: Particle, reset: bool) -> None:    
+    # if reset, initializes mom1 and mom2, else updates mom1 and mom2
     state = particle.state
     if reset:
         state[particle.pid] = {
@@ -51,6 +55,7 @@ def _swag_swag(particle: Particle, reset: bool) -> None:
 
 def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
                     pretrain_epochs: int, swag_epochs: int, swag_pids: list[int]) -> None:
+    # training function for mswag particle
     other_pids = [pid for pid in swag_pids if pid != particle.pid]
     
     # Pre-training loop
@@ -92,6 +97,7 @@ def _mswag_sample_entry(particle: Particle,
                         var_clamp: float,
                         num_samples: int,
                         num_models) -> None:
+    # TODO comment explaining this function
     # Unpack state
     state = particle.state
     pid = particle.pid
@@ -195,7 +201,9 @@ def _mswag_sample(particle: Particle,
 
 
 class MultiSWAG(Infer):
+    """MultiSWAG class"""
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
+        """init"""
         super(MultiSWAG, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         self.swag_pids = []
         self.sample_pids = []
@@ -206,6 +214,7 @@ class MultiSWAG(Infer):
                     num_models=1, lr=1e-3, pretrain_epochs=10, swag_epochs=5,
                     mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                     mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
+        """bayes_infer"""
         if "n" in mswag_state:
             raise ValueError(f"Cannot run with state {mswag_state['n']}. Please rename.")
         mswag_state["n"] = 1
@@ -237,6 +246,7 @@ class MultiSWAG(Infer):
 
     def posterior_pred(self, dataloader: DataLoader, loss_fn=torch.nn.MSELoss(),
                        num_samples=20, scale=1.0, var_clamp=1e-30):
+        """posterior_pred"""
         self.push_dist.p_wait([self.push_dist.p_launch(0, "SWAG_SAMPLE_ENTRY", dataloader, loss_fn, scale, var_clamp, num_samples, len(self.swag_pids))])
 
 
@@ -256,6 +266,7 @@ def train_mswag(dataloader: DataLoader,
                 mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                 mswag_sample_entry=_mswag_sample_entry,
                 mswag_sample=_mswag_sample):
+    """train_mswag"""
     mswag = MultiSWAG(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     mswag.bayes_infer(dataloader, loss_fn, num_models, lr=lr, pretrain_epochs=pretrain_epochs,
                       swag_epochs=swag_epochs, mswag_entry=mswag_entry, mswag_state=mswag_state,

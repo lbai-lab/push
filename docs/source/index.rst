@@ -7,6 +7,12 @@ This is documentation for the Push library `https://github.com/lbai-lab/push`_
 
    This project is under active development.
 
+.. toctree::
+   :glob:
+   :maxdepth: 2
+   :caption: Quick Start
+
+   Quick_Start/index
 
 .. toctree::
    :glob:

@@ -12,7 +12,7 @@ This is documentation for the Push library `https://github.com/lbai-lab/push`_
    :maxdepth: 2
    :caption: Quick Start
 
-   Quick_Start/index
+   quick_start/index
 
 .. toctree::
    :glob:

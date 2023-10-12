@@ -8,13 +8,6 @@ Push Documentation
 
 .. toctree::
    :glob:
-   :maxdepth: 1
-   :caption: Quick Start
-
-   tutorials/01_Bayesian_Deep_Learning/Quick_Start.ipynb
-
-.. toctree::
-   :glob:
    :maxdepth: 2
    :caption: Tutorials
 

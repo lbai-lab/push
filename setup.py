@@ -1,4 +1,5 @@
 import pathlib
+from pathlib import Path
 from setuptools import setup, find_packages
 
 # The directory containing this file
@@ -6,6 +7,18 @@ HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
 README = (HERE / "README.md").read_text()
+
+
+def get_install_requires() -> list[str]:
+    """Returns requirements.txt parsed to a list"""
+    fname = Path(__file__).parent / 'requirements.txt'
+    targets = []
+    if fname.exists():
+        with open(fname, 'r') as f:
+            targets = f.read().splitlines()
+    print("targets =========")
+    print(targets)
+    return targets
 
 # This call to setup() does all the work
 setup(
@@ -25,8 +38,7 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    install_requires=[
-        ],
+    install_requires=get_install_requires(),
     extras_require={
     }
 )

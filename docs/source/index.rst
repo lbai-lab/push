@@ -1,7 +1,7 @@
 Push Documentation
 ===================================
 
-This is documentation for the Push library `https://github.com/lbai-lab/push`_
+This is documentation for the Push library `https://github.com/lbai-lab/push`
 
 .. note::
 

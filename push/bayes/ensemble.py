@@ -13,7 +13,11 @@ from push.particle import Particle
 # =============================================================================
 
 def mk_optim(params):
-    """returns Adam optimizer"""
+    """
+    returns Adam optimizer
+    
+    :pram params: model parameters
+    """
     # Limitiation must be global
     return torch.optim.Adam(params, lr=1e-1, weight_decay=1e-2)
 

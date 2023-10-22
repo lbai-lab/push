@@ -7,7 +7,13 @@ import push.push as ppush
 
 
 class Infer:
-    """base Infer class
+    """
+    Base Infer class. Creates a PusH distribution with an inference method and return parameters method.
+
+    The :function bayes_infer function should be overridden by a child class function, and the :function p_parameters
+    returns a list of all particle's parameters.
+
+
     """    
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         self.mk_nn = mk_nn
@@ -21,11 +27,9 @@ class Infer:
         atexit.register(self._cleanup)
 
     def bayes_infer(self, dataloader: DataLoader, epochs: int, **kwargs) -> None:
-        """inference function"""
         raise NotImplementedError
     
     def p_parameters(self) -> List[List[torch.Tensor]]:
-        """returns parameters"""
         return [self.push_dist.p_parameters(pid) for pid in self.push_dist.particle_ids()]
 
     def _cleanup(self):

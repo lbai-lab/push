@@ -22,7 +22,7 @@ def get_install_requires() -> list[str]:
 
 # This call to setup() does all the work
 setup(
-    name="PusH",
+    name="PusHlib",
     version="0.1.0",
     description="Concurrent Probabilistic Programming for Bayesian Deep Learning",
     long_description=README,
@@ -32,7 +32,7 @@ setup(
     author_email="dan.e.huang@gmail.com",
     license="Apache 2.0",
     classifiers=[
-        "License :: OSI Approved :: Apache 2.0 License",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
     ],

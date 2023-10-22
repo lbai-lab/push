@@ -12,8 +12,6 @@ class Infer:
 
     The :function bayes_infer function should be overridden by a child class function, and the :function p_parameters
     returns a list of all particle's parameters.
-
-
     """    
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         self.mk_nn = mk_nn

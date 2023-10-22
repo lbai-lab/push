@@ -16,7 +16,7 @@ def mk_optim(params):
     """
     returns Adam optimizer
     
-    :pram params: model parameters
+    :param params: model parameters
     """
     # Limitiation must be global
     return torch.optim.Adam(params, lr=1e-1, weight_decay=1e-2)
@@ -65,15 +65,16 @@ class Ensemble(Infer):
         Creates particles and launches push distribution training loop.
         
         :param Callable dataloader: Dataloader.
-        :param int epochs: Number of epochs to train for. 
+        :param int, optional epochs: Number of epochs to train for. 
         :param Callable loss_fn: Loss function to be used during training.
-        :param int num_ensembles: The number of models to be ensembled.
+        :param int, optional num_ensembles: The number of models to be ensembled.
         :param any mk_optim: Returns an optimizer.
         :param function ensemble_entry: Training loop for deep ensemble.
         :param dict ensemble_state: a dictionary to store state variables for ensembled models. i.e. in swag we need to know how
            how many swag epochs have passed to properly calculate a running average of model weights.
         :param bool f_save: Flag to save each particle/model. Requires "particles" folder in root directory of the script calling train_deep_ensemble
 
+        :return: None
 
         """
         # 1. Create particles
@@ -99,24 +100,27 @@ class Ensemble(Infer):
 def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
                         nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
                         num_ensembles: int = 2, mk_optim = mk_optim,
-                        ensemble_entry = _deep_ensemble_main, ensemble_state={}) -> None:
+                        ensemble_entry = _deep_ensemble_main, ensemble_state={}) -> List[torch.Tensor]:
     """
-    Returns a list of model paramters for a deep ensemble.
+    Train a deep ensemble PusH distribution and return a list of particle parameters.
 
     
     :param Callable dataloader: Dataloader.
     :param Callable loss_fn: Loss function to be used during training.
-    :param int epochs: Number of epochs to train for.
+    :param int, optional epochs: Number of epochs to train for.
     :param Callable nn: The base model to be ensembled and trained.
     :param any *args: Any arguments needed for the model's initialization.
-    :param int num_devices: The desired number of gpu devices to be utilized during training.
-    :param int cache_size: The desired size of cache allocated to storing particles.
-    :param int view_size: The number of other particle's parameters that can be seen by a particle on a single GPU.
-    :param int num_ensembles: The number of models to be ensembled.
+    :param int, optional num_devices: The desired number of gpu devices to be utilized during training.
+    :param int, optional cache_size: The desired size of cache allocated to storing particles.
+    :param int, optional view_size: The number of other particle's parameters that can be seen by a particle on a single GPU.
+    :param int, optional num_ensembles: The number of models to be ensembled.
     :param any mk_optim: Returns an optimizer.
     :param function ensemble_entry: Training loop for deep ensemble.
     :param dict ensemble_state: a dictionary to store state variables for ensembled models. i.e. in swag we need to know how
            how many swag epochs have passed to properly calculate a running average of model weights.
+
+    :return: Returns a list of all particle's parameters. 
+    :rtype: List[torch.Tensor]
     """
     ensemble = Ensemble(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, num_ensembles=num_ensembles, mk_optim=mk_optim,

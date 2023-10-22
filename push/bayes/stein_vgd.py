@@ -16,7 +16,11 @@ from push.bayes.utils import flatten, unflatten_like
 
 def mk_empty_optim(params):
     # Limitiation must be global
-    """returns empty optimizer"""
+    """
+
+    Returns nothing
+
+    """
     return None
 
 
@@ -25,7 +29,18 @@ def mk_empty_optim(params):
 # -----------------------------------------------------
     
 def normal_prior(params: Iterable[torch.Tensor]) -> list[torch.Tensor]:
-    """returns grads"""
+    """
+    Returns the gradients of a set of tensors with respect to a normal distribution.
+
+    This function iterates over the provided tensors, calculates the log probability of each tensor under a normal distribution
+    with mean 0.0 and standard deviation 1.0. It then computes and appends the gradients with respect to each parameter.
+    The resulting list contains the gradient tensors.
+    
+    :param Iterable[torch.Tensor] params: A collection of tensors whose gradients will be calculated.
+    :return: A list containing the computed gradients for each parameter.
+    :rtype: list[torch.Tensor]
+
+    """
     normal = Normal(0.0, 1.0)
     grads = []
     for param in params:
@@ -40,13 +55,41 @@ def normal_prior(params: Iterable[torch.Tensor]) -> list[torch.Tensor]:
 # -----------------------------------------------------
 
 def torch_squared_exp_kernel(x: torch.Tensor, y: torch.Tensor, length_scale: float) -> torch.Tensor:
-    """torch  squared exp kernal"""
+    """
+    Computes the squared exponential kernel between two tensors.
+
+    This function calculates the squared exponential kernel value between two tensors `x` and `y`. 
+    The characteristic length scale of the kernel is specified by `length_scale`.
+    The squared exponential kernel is given by exp(-0.5 * (x - y)^2 / length_scale^2).
+
+    :param torch.Tensor x: The first input tensor.
+    :param torch.Tensor y: The second input tensor.
+    :param float length_scale: The characteristic length scale of the kernel.
+
+    :return: The computed squared exponential kernel value.
+    :rtype: torch.Tensor
+
+    :note: This kernel is commonly used in Gaussian Process regression for modeling smooth functions.
+
+    """
     diff = (x - y) / length_scale
     radius2 = torch.dot(diff, diff)
     return torch.exp(-0.5 * radius2)
 
 def torch_squared_exp_kernel_grad(x: torch.Tensor, y: torch.Tensor, length_scale: float) -> torch.Tensor:
-    """torch squared exp kernal grad"""
+    """
+    Computes the gradient of the squared exponential kernel with respect to its inputs.
+
+    This function calculates the gradient of the squared exponential kernel with respect to its inputs, 
+    `x` and `y`, as well as with respect to the characteristic length scale `length_scale`.
+
+    :param: torch.Tensor x: The first input tensor.
+    :param: torch.Tensor y: The second input tensor.
+    :param float length_scale: The characteristic length scale of the kernel.
+    :return: The computed gradient of the squared exponential kernel.
+    :rtype: torch.Tensor
+
+    """
     prefactor = (x - y) / (length_scale ** 2)
     return -prefactor * torch_squared_exp_kernel(x, y, length_scale)
 
@@ -178,7 +221,27 @@ def _svgd_follow(particle: Particle, lr: float, update: List[torch.Tensor]) -> N
 
 
 class SteinVGD(Infer):
-    """SteinVGD Class"""
+    """
+    SteinVGD Class.
+
+    This class extends the 'Infer' class and uses Stein Variational Gradient Descent (SteinVGD) 
+    for Bayesian inference tasks.
+
+    :param: Callable mk_nn: A function that creates the neural network architecture for the model.
+    :param: any *args: Additional arguments that will be passed to the 'Infer' class.
+    :param: int num_devices: The number of devices to be used for computation. Default is 1.
+    :param: int cache_size: The size of the cache for storing computed gradients. Default is 4.
+    :param: int view_size: The size of the view for distributed computations. Default is 4.
+
+
+    :meth: bayes_infer(dataloader, epochs, prior=None, loss_fn=torch.nn.MSELoss(), 
+                    num_particles=1, lengthscale=1.0, lr=1e-3, 
+                    svgd_entry=_svgd_leader, svgd_state={}):
+            Performs Bayesian inference using SteinVGD.
+    
+    """
+
+
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         super(SteinVGD, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         
@@ -208,7 +271,37 @@ def train_svgd(dataloader: DataLoader, loss_fn: Callable, epochs: int, num_parti
                lengthscale=1.0, lr=1e3, prior=None,
                num_devices=1, cache_size=4, view_size=4,
                svgd_entry=_svgd_leader, svgd_state={}) -> None:
-    """SVGD training function"""
+    """
+    Trains a model using Stein Variational Gradient Descent (SVGD).
+
+    This function trains a model using Stein Variational Gradient Descent (SVGD). It initializes a `SteinVGD` instance
+    and performs Bayesian inference using the provided data loader, loss function, and training parameters. The resulting
+    parameters from SVGD are returned.
+    
+    :param: DataLoader dataloader: The data loader for the training data.
+    :param: Callable loss_fn: The loss function to be used during training.
+    :param: int epochs: The number of training epochs.
+    :param: int num_particles: The number of particles to use in SVGD.
+    :param: Callable nn: A function that creates the neural network architecture for the model.
+    :param: any *args: Additional arguments to be passed to the `SteinVGD` constructor.
+    :param: float, optional lengthscale: The characteristic length scale of the SVGD kernel. Default is 1.0.
+    :param: float, optional lr: The learning rate for optimization. Default is 1e3.
+    :param: prior: Prior information for Bayesian inference. Default is None.
+    :param: int, optional num_devices: The number of devices to be used for computation. Default is 1.
+    :param: int, optional cache_size: The size of the cache for storing computed gradients. Default is 4.
+    :param: int, optional view_size: The size of the view for distributed computations. Default is 4.
+    :param: svgd_entry: The SVGD entry function. Default is `_svgd_leader`.
+    :param: dict, optional svgd_state: Additional state information for SVGD. Default is {}.
+
+    :return: None
+
+    :rtype: None
+
+
+
+    :note: The returned parameters can be used for further inference, testing, and analysis.
+
+    """
     with SteinVGD(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size) as stein_vgd:
         stein_vgd.bayes_infer(dataloader, epochs,
                               prior=prior, loss_fn=loss_fn,

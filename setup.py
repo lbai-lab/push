@@ -22,7 +22,7 @@ def get_install_requires() -> list[str]:
 
 # This call to setup() does all the work
 setup(
-    name="PusHlib",
+    name="PusH",
     version="0.1.0",
     description="Concurrent Probabilistic Programming for Bayesian Deep Learning",
     long_description=README,

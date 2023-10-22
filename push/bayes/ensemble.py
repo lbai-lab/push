@@ -107,7 +107,7 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
     :param any *args: Any arguments needed for the model's initialization.
     :param int num_devices: The desired number of gpu devices to be utilized during training.
     :param int cache_size: The desired size of cache allocated to storing particles.
-    :param int view_size: The number of particles to consider storing in cache.
+    :param int view_size: The number of other particle's parameters that can be seen by a particle on a single GPU.
     :param int num_ensembles: The number of models to be ensembled.
     :param any mk_optim: Returns an optimizer.
     :param function ensemble_entry: Training loop for deep ensemble.

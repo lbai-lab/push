@@ -8,7 +8,7 @@ def flatten(lst):
 
 
 def unflatten_like(vector, likeTensorList):
-    """ Inspired by: https://github.com/wjmaddox/swa_gaussian/blob/master/swag/utils.py"""
+    """Inspired by: https://github.com/wjmaddox/swa_gaussian/blob/master/swag/utils.py"""
     # Takes a flat torch.tensor and unflattens it to a list of torch.tensors
     #    shaped like likeTensorList
     outList = []

@@ -61,7 +61,7 @@ class Ensemble(Infer):
                     dataloader: DataLoader, epochs: int,
                     loss_fn=torch.nn.MSELoss(),
                     num_ensembles: int = 2, mk_optim=mk_optim,
-                    ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = True):
+                    ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """
         Creates particles and launches push distribution training loop.
         

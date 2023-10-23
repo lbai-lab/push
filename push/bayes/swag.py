@@ -32,7 +32,11 @@ def _swag_step(particle: Particle,
 
 
 def update_theta(state, state_sq, param, param_sq, n):
-    """update_theta"""
+    """
+
+    Updates the first and second moments and iterates the number of parameter settings averaged.
+
+    """
     for st, st_sq, p, p_sq in zip(state, state_sq, param, param_sq):
         st.data = (st.data * n + p.data)/(n+1)
         st_sq.data = (st_sq.data * n + p_sq.data)/(n+1)
@@ -201,9 +205,19 @@ def _mswag_sample(particle: Particle,
 
 
 class MultiSWAG(Infer):
-    """MultiSWAG class"""
+    """
+
+    MultiSWAG class.
+    Used for running MultiSWAG models.
+
+    :param Callable mk_nn: The base model to be ensembled.
+    :param any *args: Any arguments required for base model to be initialized.
+    :param int num_devices: The desired number of gpu devices that will be utilized.
+    :param int cache_size: The size of cache used to store particles.
+    :param int view_size: The number of particles to consider storing in cache.
+    
+    """
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
-        """init"""
         super(MultiSWAG, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         self.swag_pids = []
         self.sample_pids = []
@@ -214,7 +228,23 @@ class MultiSWAG(Infer):
                     num_models=1, lr=1e-3, pretrain_epochs=10, swag_epochs=5,
                     mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                     mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
-        """bayes_infer"""
+        """
+        Creates swag particles and launches a PusH distribution with MultiSWAG.
+        
+        :param Callable dataloader: Dataloader.
+        :param int, optional epochs: Number of epochs to train for. 
+        :param Callable loss_fn: Loss function to be used during training.
+        :param int, optional num_ensembles: The number of models to be ensembled.
+        :param any mk_optim: Returns an optimizer.
+        :param mswag_entry: Training loop for deep ensemble.
+        :param dict mswag_state: A dictionary to store state variables for ensembled models. i.e. in swag we need to know how
+           how many swag epochs have passed to properly calculate a running average of model weights.
+        :param mswag_sample_entry: Sampling function.
+        :param bool f_save: Flag to save each particle/model. Requires "particles" folder in root directory of the script calling train_deep_ensemble
+
+        :return: None
+
+        """
         if "n" in mswag_state:
             raise ValueError(f"Cannot run with state {mswag_state['n']}. Please rename.")
         mswag_state["n"] = 1
@@ -246,7 +276,6 @@ class MultiSWAG(Infer):
 
     def posterior_pred(self, dataloader: DataLoader, loss_fn=torch.nn.MSELoss(),
                        num_samples=20, scale=1.0, var_clamp=1e-30):
-        """posterior_pred"""
         self.push_dist.p_wait([self.push_dist.p_launch(0, "SWAG_SAMPLE_ENTRY", dataloader, loss_fn, scale, var_clamp, num_samples, len(self.swag_pids))])
 
 
@@ -266,7 +295,43 @@ def train_mswag(dataloader: DataLoader,
                 mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                 mswag_sample_entry=_mswag_sample_entry,
                 mswag_sample=_mswag_sample):
-    """train_mswag"""
+    """
+    Train a MultiSWAG model.
+
+    :param DataLoader dataloader: DataLoader containing the training data.
+
+    :param Callable loss_fn: Loss function used for training.
+
+    :param int pretrain_epochs: Number of epochs for pretraining.
+
+    :param int swag_epochs: Number of epochs for SWAG training.
+
+    :param int num_models: Number of models to use in MultiSWAG.
+
+    :param int cache_size: Size of the cache for MultiSWAG.
+
+    :param int view_size: Size of the view for MultiSWAG.
+
+    :param Callable nn: Callable function representing the neural network model.
+
+    :param *args: Additional arguments for the neural network.
+
+    :param int num_devices: Number of devices for training (default is 1).
+
+    :param float lr: Learning rate for training (default is 1e-3).
+
+    :param Callable mswag_entry: MultiSWAG entry function (default is _mswag_particle).
+
+    :param dict mswag_state: Initial state for MultiSWAG (default is {}).
+
+    :param bool f_save: Flag to save the model (default is False).
+
+    :param Callable mswag_sample_entry: MultiSWAG sample entry function (default is _mswag_sample_entry).
+
+    :param Callable mswag_sample: MultiSWAG sample function (default is _mswag_sample).
+
+    :return MultiSWAG: Trained MultiSWAG model.
+    """
     mswag = MultiSWAG(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     mswag.bayes_infer(dataloader, loss_fn, num_models, lr=lr, pretrain_epochs=pretrain_epochs,
                       swag_epochs=swag_epochs, mswag_entry=mswag_entry, mswag_state=mswag_state,

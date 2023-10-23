@@ -45,7 +45,8 @@ def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) ->
 
 class Ensemble(Infer):
     """
-    The base class for any Ensemble Bayesian Deep Learning task
+    The Ensemble Class.
+    Used for running deep ensembles.
     
     :param Callable mk_nn: The base model to be ensembled.
     :param any *args: Any arguments required for base model to be initialized.

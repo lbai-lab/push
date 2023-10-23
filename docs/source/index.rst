@@ -1,11 +1,11 @@
-Push Documentation
+PusH Documentation
 ===================================
 
-This is documentation for the Push `library https://github.com/lbai-lab/push`_
+This is documentation for the PusH `library https://github.com/lbai-lab/push`_
 
 .. note::
 
-   This project is under active development.
+   PusH and its docs are under active development.
 
 .. toctree::
    :glob:

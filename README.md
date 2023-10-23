@@ -28,7 +28,7 @@ pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision h5py
 
 ## Quick Start
 
-1. Install `push` and its dependencies following installation.
+1. Install `push` and its dependencies following [installation](https://github.com/lbai-lab/push#installation).
 2. Run some basic tests for various BDL algorithms. 
 ```
 ./run_tests.sh

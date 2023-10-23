@@ -28,15 +28,15 @@ pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision h5py
 
 ## Quick Start
 
-1. Install `push` and it's dependencies following installation.
+1. Install `push` and its dependencies following installation.
 2. Run some basic tests for various BDL algorithms. 
 ```
 ./run_tests.sh
 ```
 3. Also experiment with:
-  - `python /test/test_basic.py -m ensemble`
-  - `python /test/test_basic.py -m mswag`
-  - `python /test/test_basic.py -m stein_vgd`
+  - `python ./test/test_basic.py -m ensemble`
+  - `python ./test/test_basic.py -m mswag`
+  - `python ./test/test_basic.py -m stein_vgd`
 
 
 ## Advanced Users

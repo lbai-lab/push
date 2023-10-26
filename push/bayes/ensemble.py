@@ -19,7 +19,7 @@ def mk_optim(params):
     :param params: model parameters
     """
     # Limitiation must be global
-    return torch.optim.Adam(params, lr=1e-1, weight_decay=1e-2)
+    return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
 
 
 # =============================================================================
@@ -36,7 +36,8 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
             losses += [loss]
             for pid in other_particles:
                 particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
-        print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
+        # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
+    # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
 
 
 def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) -> None:

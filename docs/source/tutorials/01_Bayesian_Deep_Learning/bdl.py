@@ -1,22 +1,11 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
+import math
 
-
-class RandDataset(Dataset):
-    def __init__(self, batch_size, N, D):
-        self.xs = torch.randn(batch_size*N, D)
-        self.ys = torch.randn(batch_size*N, 1)
-
-    def __len__(self):
-        return len(self.xs)
-
-    def __getitem__(self, idx):
-        return self.xs[idx], self.ys[idx]
-    
 class SineDataset(Dataset):
     def __init__(self, batch_size, N, D, begin, end):
-        self.xs = torch.linspace(begin * 3.1416, end * 3.1416, batch_size * N * D).reshape(batch_size * N, D)
+        self.xs = torch.linspace(begin, end, batch_size * N * D).reshape(batch_size * N, D)
         self.ys = torch.sin(self.xs[:, 0]).reshape(-1, 1)
 
     def __len__(self):

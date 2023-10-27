@@ -4,5 +4,27 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "push"
-authors = [{name = "Daniel Huange", email = "danielhuange@sfsu.edu"}]
+authors = [
+    {name = "Daniel Huange", email = "danielhuange@sfsu.edu"},
+]
 dynamic = ["version", "description"]
+readme = "README.md"
+requires-python = "~=3.10"
+dependencies = [
+    "numpy>=1.26.0",
+    "torch>=2.1.0",
+    "tqdm>=4.66.1",
+]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+]
+
+[tool.flit.module]
+name = "push"
+
+[project.urls]
+"Homepage" = "https://github.com/lbai-lab/push"
+"Bug Tracker" = "https://github.com/lbai-lab/push/issues"
+"Documentation" = "https://lbai-push.readthedocs.io/en/latest/"

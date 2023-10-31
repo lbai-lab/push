@@ -1,7 +1,7 @@
 PusH Documentation
 ===================================
 
-This is documentation for the PusH `library https://github.com/lbai-lab/push`_
+This is documentation for the PusH library `https://github.com/lbai-lab/push`.
 
 .. note::
 

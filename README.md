@@ -28,7 +28,9 @@ conda activate push_env
 
 ```
 2. Locally install PusH in project root.
-   `pip install -e .`
+```
+pip install -e .
+```
 3. Install requirements
 ```
 pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision h5py pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
@@ -49,7 +51,8 @@ pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision h5py
 ## Advanced Users
 
 Add your own BDL algorithms in `/push/bayes` by extending the `Infer` class.
-- Deep Ensembles, MultiSWAG, and Stein Variational Gradient Descent are implemented as examples.
+
+Deep Ensembles, MultiSWAG, and Stein Variational Gradient Descent are implemented as examples.
 
 
 ## Experiments

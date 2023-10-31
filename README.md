@@ -12,22 +12,26 @@ enables a probabilistic programming approach to Bayesian deep learning (BDL).
 ## Full Documentation and Tutorials
 https://lbai-push.readthedocs.io/en/latest/
 
-
 ## Installation
+Currently PusH can only be installed from source.
 
-1. Create an isolated Python environment
-   `conda create -n push_exp python=3.10`
-2. Install requirements
+### Installing with pip
+
+Pip installation is under development.
+
+### Installing from Source
+
+1. Create and activate isolated Python environment
+   `conda create -n push_env python=3.10`
+   `conda activate push_env`
+2. Locally install PusH in project root.
+   `pip install -e .`
+3. Install requirements
 ```
-conda activate push_exp
 pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision h5py pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
 ```
-3. Locally install PusH in project root.
-   `pip install -e .`
-
 
 ## Quick Start
-
 1. Install `push` and its dependencies following [installation](https://github.com/lbai-lab/push#installation).
 2. Run some basic tests for various BDL algorithms. 
 ```

@@ -22,8 +22,11 @@ Pip installation is under development.
 ### Installing from Source
 
 1. Create and activate isolated Python environment
-   `conda create -n push_env python=3.10`
-   `conda activate push_env`
+```
+conda create -n push_env python=3.10
+conda activate push_env
+
+```
 2. Locally install PusH in project root.
    `pip install -e .`
 3. Install requirements

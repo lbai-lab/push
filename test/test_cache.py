@@ -142,7 +142,7 @@ if __name__ == "__main__":
             BiggerNN, n, input_dim, output_dim, hidden_dim,
             num_devices=args.devices,
             num_ensembles=num_ensembles,
-            cache_size=2
+            cache_size=1
         )
 
         # num_ensembles = 4

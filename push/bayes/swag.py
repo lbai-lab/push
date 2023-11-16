@@ -223,7 +223,6 @@ def _mswag_sample_entry_regression(particle: Particle,
     ans = [f.wait() for f in futs]
 
     # Mean prediction across all models
-    print("my_ans: ", my_ans)
     mean_preds = torch.mean(torch.stack([my_ans['mean_preds']] + [ans[i-1]['mean_preds'] for i in range(1, num_models)]), dim=0)
 
     return mean_preds

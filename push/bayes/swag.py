@@ -133,7 +133,6 @@ def _mswag_sample_entry(particle: Particle,
 
     return classes, classes2
 
-
 def _mswag_sample(particle: Particle,
                   dataloader: DataLoader,
                   loss_fn: Callable,
@@ -154,6 +153,7 @@ def _mswag_sample(particle: Particle,
 
     # Compute original loss
     classes = {k: [0 for i in range(10)] for k in range(10)}
+    
     losses = []
     for data, label in tqdm(dataloader):
         pred = detach_to_cpu(particle.forward(data).wait())
@@ -201,6 +201,93 @@ def _mswag_sample(particle: Particle,
         "losses": torch.mean(torch.tensor(losses)),
         "preds": preds,
         "max_preds": max_preds,
+    }
+
+
+
+def _mswag_sample_entry_regression(particle: Particle,
+                                   dataloader: DataLoader,
+                                   loss_fn: Callable,
+                                   scale: float,
+                                   var_clamp: float,
+                                   num_samples: int,
+                                   num_models) -> None:
+    # Unpack state
+    state = particle.state
+    pid = particle.pid
+    other_pids = list(range(1, num_models))
+
+    # Perform SWAG sampling for every particle
+    my_ans = _mswag_sample(particle, dataloader, loss_fn, scale, var_clamp, num_samples)
+    futs = [particle.send(pid, "SWAG_SAMPLE", dataloader, loss_fn, scale, var_clamp, num_samples) for pid in other_pids]
+    ans = [f.wait() for f in futs]
+
+    # Mean prediction across all models
+    print("my_ans: ", my_ans)
+    mean_preds = torch.mean(torch.stack([my_ans['mean_preds']] + [ans[i-1]['mean_preds'] for i in range(1, num_models)]), dim=0)
+
+    return mean_preds
+
+
+def _mswag_sample_regression(particle: Particle,
+                             dataloader: DataLoader,
+                             loss_fn: Callable,
+                             scale: float,
+                             var_clamp: float,
+                             num_samples: int) -> None:
+    """Modified for regression problems."""
+    state = particle.state
+    pid = particle.pid
+    # Gather
+    mean_list = [param for param in particle.state[pid]["mom1"]]
+    sq_mean_list = [param for param in particle.state[pid]["mom2"]]
+
+    scale_sqrt = scale ** 0.5
+    mean = flatten(mean_list)
+    sq_mean = flatten(sq_mean_list)
+
+    # Compute original loss
+    losses = []
+    for data, target in tqdm(dataloader):
+        pred = detach_to_cpu(particle.forward(data).wait())
+        loss = loss_fn(pred, target)
+        losses += [loss.detach().to("cpu")]
+
+    # Compute and store prediction for each SWAG sample
+    preds = {i: [] for i in range(num_samples)}
+    swag_losses = {}
+    for i in range(num_samples):
+        # Draw diagonal variance sample
+        var = torch.clamp(sq_mean - mean ** 2, var_clamp)
+        var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
+
+        rand_sample = var_sample
+
+        # Update sample with mean and scale
+        sample = mean + scale_sqrt * rand_sample
+        sample = sample.unsqueeze(0)
+
+        # Update
+        samples_list = unflatten_like(sample, mean_list)
+
+        for param, sample in zip(particle.module.parameters(), samples_list):
+            param.data = sample
+
+        swag_losses = []
+        for data, target in tqdm(dataloader):
+            pred = detach_to_cpu(particle.forward(data).wait())
+            preds[i] += [pred]
+            loss = loss_fn(pred, target)
+            swag_losses += [loss.detach().to("cpu")]
+
+    # Mean prediction for the current SWAG particle
+    mean_preds = torch.mean(torch.stack([torch.stack(v) for v in preds.values()]), dim=0)
+
+
+    return {
+        "losses": torch.mean(torch.tensor(losses)),
+        "mean_preds": mean_preds,
+        "swag_losses": swag_losses,
     }
 
 

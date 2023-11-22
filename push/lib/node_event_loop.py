@@ -14,10 +14,11 @@ from push.pfuture import PFuture
 
 
 class NodeEventLoop(Waitable):
+    """The Node Event Loop (NEL) is the main event loop for a node.
+
+    The NEL is responsible for mapping particles to devices and executing operations on particles.
     """
-    1. Each node event loop is mapped to all devices on that node.
-    2. The node event loop is responsible for executing all operations on particles.
-    """    
+
     def __init__(self,
                  mk_module: Callable,
                  args: List[any],
@@ -27,6 +28,27 @@ class NodeEventLoop(Waitable):
                  devices: int,
                  cache_size: int,
                  view_size: int) -> None:
+        """Constructor for Node Event Loop.
+
+        Args:
+            mk_module (Callable): 
+                Function that creates a module.
+            args (List[any]): 
+                Arguments to pass to `mk_module`.
+            in_queue (mp.Queue): 
+                Receiving message queue.
+            out_queue (mp.Queue): 
+                Direct queue to PusH.
+            rank (int): 
+                Rank of NEL.
+            devices (int): 
+                Devices on this NEL.
+            cache_size (int): 
+                Size of particle cache.
+            view_size (int): 
+                Size of view cache.
+        """
+
         # Node information
         self.rank = rank                         # Rank of NEL
         self.devices = devices                   # Devices on this NEL
@@ -344,7 +366,7 @@ class NodeEventLoop(Waitable):
         rank_id_curr = self._particle_to_rank[pid_curr]
         rank_id = self._particle_to_rank[pid]        
         if rank_id == rank_id_curr: # We are on the same rank
-            # NOTE: INVARIANT: the current function always has it's module in scope
+            # NOTE: INVARIANT: the current function always has its module in scope
             module = self._context_switch_module(pid, msg='get')
 
             # Create space for pid on pid_curr's device

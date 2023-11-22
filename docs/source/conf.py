@@ -20,7 +20,7 @@ sys.path.append(os.path.abspath(
 
 # -- Project information
 
-project = 'push'
+project = 'PusH'
 copyright = 'The Push authors'
 author = 'Daniel Huang'
 
@@ -35,7 +35,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    "nbsphinx"
+    'nbsphinx',
+    'sphinx.ext.napoleon',
 ]
 autodoc_mock_imports = ["tqdm","numpy"]
 

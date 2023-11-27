@@ -17,6 +17,24 @@ class NodeEventLoop(Waitable):
     """The Node Event Loop (NEL) is the main event loop for a node.
 
     The NEL is responsible for mapping particles to devices and executing operations on particles.
+
+    Args:
+        mk_module (Callable): 
+            Function that creates a module.
+        args (List[any]): 
+            Arguments to pass to `mk_module`.
+        in_queue (mp.Queue): 
+            Receiving message queue.
+        out_queue (mp.Queue): 
+            Direct queue to PusH.
+        rank (int): 
+            Rank of NEL.
+        devices (int): 
+            Devices on this NEL.
+        cache_size (int): 
+            Size of particle cache.
+        view_size (int): 
+            Size of view cache.
     """
 
     def __init__(self,
@@ -28,27 +46,6 @@ class NodeEventLoop(Waitable):
                  devices: int,
                  cache_size: int,
                  view_size: int) -> None:
-        """Constructor for Node Event Loop.
-
-        Args:
-            mk_module (Callable): 
-                Function that creates a module.
-            args (List[any]): 
-                Arguments to pass to `mk_module`.
-            in_queue (mp.Queue): 
-                Receiving message queue.
-            out_queue (mp.Queue): 
-                Direct queue to PusH.
-            rank (int): 
-                Rank of NEL.
-            devices (int): 
-                Devices on this NEL.
-            cache_size (int): 
-                Size of particle cache.
-            view_size (int): 
-                Size of view cache.
-        """
-
         # Node information
         self.rank = rank                         # Rank of NEL
         self.devices = devices                   # Devices on this NEL
@@ -312,9 +309,23 @@ class NodeEventLoop(Waitable):
     # -----------------------------------------------------
 
     def particles(self) -> List[int]:
+        """Returns a list of particle pid's on all devices.
+
+        Returns:
+            List[int]: List of pid's.
+        """
         return list(self._particle_to_device.keys())
 
     def register_receive(self, pid: int, msg:str, fn: Callable, state: dict) -> None:
+        """Register receive functionality for particle `pid`.
+
+        Args:
+            pid (int): Particle identifier.
+            msg (str): Message to respond to.
+            fn (Callable): Function to execute on `msg`.
+            state (dict): User state.
+        """
+
         self._hooks[pid][msg] = (fn, state)
 
     def send(self, send_particle: Particle, pid_curr: int, pid: int, msg_name: str, *args: any) -> PFuture:

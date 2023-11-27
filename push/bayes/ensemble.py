@@ -14,11 +14,14 @@ from push.particle import Particle
 
 def mk_optim(params):
     """
-    returns Adam optimizer
+    Returns Adam optimizer.
     
-    :param params: model parameters
+    Args:
+        params: Model parameters.
+    
+    Returns:
+        torch.optim.Adam: Adam optimizer.
     """
-    # Limitiation must be global
     return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
 
 
@@ -45,15 +48,15 @@ def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) ->
 
 
 class Ensemble(Infer):
-    """
-    The Ensemble Class.
+    """The Ensemble Class.
     Used for running deep ensembles.
-    
-    :param Callable mk_nn: The base model to be ensembled.
-    :param any *args: Any arguments required for base model to be initialized.
-    :param int num_devices: The desired number of gpu devices that will be utilized.
-    :param int cache_size: The size of cache used to store particles.
-    :param int view_size: The number of particles to consider storing in cache.
+
+    Args:
+        mk_nn (Callable): The base model to be ensembled.
+        *args (any): Any arguments required for base model to be initialized.
+        num_devices (int, optional): The desired number of gpu devices that will be utilized. Defaults to 1.
+        cache_size (int, optional): The size of cache used to store particles. Defaults to 4.
+        view_size (int, optional): The number of particles to consider storing in cache. Defaults to 4.
     """
     def __init__(self, mk_nn: Callable, *args: any, num_devices: int = 1, cache_size: int = 4, view_size: int = 4) -> None:
         super(Ensemble, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
@@ -65,19 +68,22 @@ class Ensemble(Infer):
                     ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """
         Creates particles and launches push distribution training loop.
-        
-        :param Callable dataloader: Dataloader.
-        :param int, optional epochs: Number of epochs to train for. 
-        :param Callable loss_fn: Loss function to be used during training.
-        :param int, optional num_ensembles: The number of models to be ensembled.
-        :param any mk_optim: Returns an optimizer.
-        :param function ensemble_entry: Training loop for deep ensemble.
-        :param dict ensemble_state: a dictionary to store state variables for ensembled models. i.e. in swag we need to know how
-           how many swag epochs have passed to properly calculate a running average of model weights.
-        :param bool f_save: Flag to save each particle/model. Requires "particles" folder in root directory of the script calling train_deep_ensemble
 
-        :return: None
+        Args:
+            dataloader (Callable): Dataloader.
+            epochs (int, optional): Number of epochs to train for.
+            loss_fn (Callable): Loss function to be used during training.
+            num_ensembles (int, optional): The number of models to be ensembled.
+            mk_optim (any): Returns an optimizer.
+            ensemble_entry (function): Training loop for deep ensemble.
+            ensemble_state (dict): A dictionary to store state variables for ensembled models.
+                                   For example, in SWAG, we need to know how many SWAG epochs have passed
+                                   to properly calculate a running average of model weights.
+            f_save (bool): Flag to save each particle/model. Requires "particles" folder in the root directory
+                           of the script calling train_deep_ensemble.
 
+        Returns:
+            None
         """
         # 1. Create particles
         pids = [
@@ -103,26 +109,24 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
                         nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
                         num_ensembles: int = 2, mk_optim = mk_optim,
                         ensemble_entry = _deep_ensemble_main, ensemble_state={}) -> List[torch.Tensor]:
-    """
-    Train a deep ensemble PusH distribution and return a list of particle parameters.
+    """Train a deep ensemble PusH distribution and return a list of particle parameters.
 
-    
-    :param Callable dataloader: Dataloader.
-    :param Callable loss_fn: Loss function to be used during training.
-    :param int, optional epochs: Number of epochs to train for.
-    :param Callable nn: The base model to be ensembled and trained.
-    :param any *args: Any arguments needed for the model's initialization.
-    :param int, optional num_devices: The desired number of gpu devices to be utilized during training.
-    :param int, optional cache_size: The desired size of cache allocated to storing particles.
-    :param int, optional view_size: The number of other particle's parameters that can be seen by a particle on a single GPU.
-    :param int, optional num_ensembles: The number of models to be ensembled.
-    :param any mk_optim: Returns an optimizer.
-    :param function ensemble_entry: Training loop for deep ensemble.
-    :param dict ensemble_state: a dictionary to store state variables for ensembled models. i.e. in swag we need to know how
-           how many swag epochs have passed to properly calculate a running average of model weights.
-
-    :return: Returns a list of all particle's parameters. 
-    :rtype: List[torch.Tensor]
+    Args:
+        dataloader (Callable): Dataloader.
+        loss_fn (Callable): Loss function to be used during training.
+        epochs (int, optional): Number of epochs to train for.
+        nn (Callable): The base model to be ensembled and trained.
+        *args (any): Any arguments needed for the model's initialization.
+        num_devices (int, optional): The desired number of gpu devices to be utilized during training. Defaults to 1.
+        cache_size (int, optional): The desired size of cache allocated to storing particles. Defaults to 4.
+        view_size (int, optional): The number of other particle's parameters that can be seen by a particle on a single GPU. Defaults to 4.
+        num_ensembles (int, optional): The number of models to be ensembled. Defaults to 2.
+        mk_optim (any, optional): Returns an optimizer. Defaults to mk_optim.
+        ensemble_entry (function, optional): Training loop for deep ensemble. Defaults to _deep_ensemble_main.
+        ensemble_state (dict, optional): a dictionary to store state variables for ensembled models. i.e. in swag we need to know how
+           how many swag epochs have passed to properly calculate a running average of model weights. Defaults to {}.
+    Returns:
+        List[torch.Tensor]: Returns a list of all particle's parameters.
     """
     ensemble = Ensemble(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, num_ensembles=num_ensembles, mk_optim=mk_optim,

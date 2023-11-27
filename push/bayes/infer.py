@@ -7,12 +7,19 @@ import push.push as ppush
 
 
 class Infer:
-    """
-    Base Infer class. Creates a PusH distribution with an inference method and return parameters method.
+    """Base Infer class
+    
+    Creates a PusH distribution with an inference method and return parameters method.
 
-    The :function bayes_infer function should be overridden by a child class function, and the :function p_parameters
-    returns a list of all particle's parameters.
-    """    
+    Infer is a base class that should be inherited by a child class that implements a Bayesian inference method.
+
+    Args:
+        mk_nn (Callable): Function to create base model.
+        *args (any): Any arguments required for base model to be initialized.
+        num_devices (int, optional): The desired number of gpu devices that will be utilized. Defaults to 1.
+        cache_size (int, optional): The size of cache used to store particles. Defaults to 4.
+        view_size (int, optional): The number of particles to consider storing in cache. Defaults to 4.
+    """ 
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         self.mk_nn = mk_nn
         self.args = args
@@ -25,9 +32,25 @@ class Infer:
         atexit.register(self._cleanup)
 
     def bayes_infer(self, dataloader: DataLoader, epochs: int, **kwargs) -> None:
+        """Bayesian inference method.
+
+        This method should be overridden by a child class.
+
+        Args:
+            dataloader (DataLoader): The dataloader to use for training.
+            epochs (int): The number of epochs to train for.
+
+        Raises:
+            NotImplementedError: 
+        """
         raise NotImplementedError
     
     def p_parameters(self) -> List[List[torch.Tensor]]:
+        """Return parameters of all particles.
+        
+        Returns:
+            List[List[torch.Tensor]]: List of all particle parameters.
+        """
         return [self.push_dist.p_parameters(pid) for pid in self.push_dist.particle_ids()]
 
     def _cleanup(self):

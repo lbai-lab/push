@@ -221,26 +221,18 @@ def _svgd_follow(particle: Particle, lr: float, update: List[torch.Tensor]) -> N
 
 
 class SteinVGD(Infer):
-    """
-    SteinVGD Class.
+    """SteinVGD Class.
 
     This class extends the 'Infer' class and uses Stein Variational Gradient Descent (SteinVGD) 
     for Bayesian inference tasks.
 
-    :param Callable mk_nn: A function that creates the neural network architecture for the model.
-    :param any *args: Additional arguments that will be passed to the 'Infer' class.
-    :param int num_devices: The number of devices to be used for computation. Default is 1.
-    :param int cache_size: The size of the cache for storing computed gradients. Default is 4.
-    :param int view_size: The size of the view for distributed computations. Default is 4.
-
-
-    :meth bayes_infer(dataloader, epochs, prior=None, loss_fn=torch.nn.MSELoss(), 
-                    num_particles=1, lengthscale=1.0, lr=1e-3, 
-                    svgd_entry=_svgd_leader, svgd_state={}):
-            Performs Bayesian inference using SteinVGD.
-    
+    Args:
+        mk_nn (Callable): A function that creates the neural network architecture for the model.
+        *args (any): Additional arguments that will be passed to the 'Infer' class.
+        num_devices (int): The number of devices to be used for computation. Default is 1.
+        cache_size (int): The size of the cache for storing computed gradients. Default is 4.
+        view_size (int): The size of the view for distributed computations. Default is 4.
     """
-
 
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
         super(SteinVGD, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
@@ -250,6 +242,24 @@ class SteinVGD(Infer):
                     prior=None, loss_fn=torch.nn.MSELoss(),
                     num_particles=1, lengthscale=1.0, lr=1e-3,
                     svgd_entry=_svgd_leader, svgd_state={}):
+        """Performs Bayesian inference using SteinVGD.
+
+        This method performs Bayesian inference using Stein Variational Gradient Descent (SteinVGD).
+
+        Overridden from the `Infer` class.
+
+        Args:
+            dataloader (DataLoader): The dataloader to use for training.
+            epochs (int): The number of epochs to train for.
+            prior (Callable, optional): Prior information for Bayesian inference. Default is None.
+            loss_fn (Callable, optional): The loss function to be used during training. Default is torch.nn.MSELoss().
+            num_particles (int, optional): The number of particles to use in SVGD. Default is 1.
+            lengthscale (float, optional): The characteristic length scale of the SVGD kernel. Default is 1.0.
+            lr (float, optional): The learning rate for optimization. Default is 1e-3.
+            svgd_entry (Callable, optional): The SVGD entry function. Default is _svgd_leader.
+            svgd_state (dict, optional): Additional state information for SVGD. Default is {}.
+
+        """
         pid_leader = self.push_dist.p_create(mk_empty_optim, device=0, receive={
             "SVGD_LEADER": svgd_entry
         }, state=svgd_state)
@@ -278,29 +288,27 @@ def train_svgd(dataloader: DataLoader, loss_fn: Callable, epochs: int, num_parti
     and performs Bayesian inference using the provided data loader, loss function, and training parameters. The resulting
     parameters from SVGD are returned.
     
-    :param DataLoader dataloader: The data loader for the training data.
-    :param Callable loss_fn: The loss function to be used during training.
-    :param int epochs: The number of training epochs.
-    :param int num_particles: The number of particles to use in SVGD.
-    :param Callable nn: A function that creates the neural network architecture for the model.
-    :param any *args: Additional arguments to be passed to the `SteinVGD` constructor.
-    :param float, optional lengthscale: The characteristic length scale of the SVGD kernel. Default is 1.0.
-    :param float, optional lr: The learning rate for optimization. Default is 1e3.
-    :param prior: Prior information for Bayesian inference. Default is None.
-    :param int, optional num_devices: The number of devices to be used for computation. Default is 1.
-    :param int, optional cache_size: The size of the cache for storing computed gradients. Default is 4.
-    :param int, optional view_size: The size of the view for distributed computations. Default is 4.
-    :param svgd_entry: The SVGD entry function. Default is `_svgd_leader`.
-    :param dict, optional svgd_state: Additional state information for SVGD. Default is {}.
+    Args:
+        dataloader (DataLoader): The data loader for the training data.
+        loss_fn (Callable): The loss function to be used during training.
+        epochs (int): The number of training epochs.
+        num_particles (int): The number of particles to use in SVGD.
+        nn (Callable): A function that creates the neural network architecture for the model.
+        *args (any): Additional arguments to be passed to the `SteinVGD` constructor.
+        lengthscale (float, optional): The characteristic length scale of the SVGD kernel. Default is 1.0.
+        lr (float, optional): The learning rate for optimization. Default is 1e3.
+        prior: Prior information for Bayesian inference. Default is None.
+        num_devices (int, optional): The number of devices to be used for computation. Default is 1.
+        cache_size (int, optional): The size of the cache for storing computed gradients. Default is 4.
+        view_size (int, optional): The size of the view for distributed computations. Default is 4.
+        svgd_entry (Callable, optional): The SVGD entry function. Default is `_svgd_leader`.
+        svgd_state (dict, optional): Additional state information for SVGD. Default is {}.
 
-    :return None
+    Returns:
+        None
 
-    :rtype None
-
-
-
-    :note The returned parameters can be used for further inference, testing, and analysis.
-
+    Note:
+        The returned parameters can be used for further inference, testing, and analysis.
     """
     with SteinVGD(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size) as stein_vgd:
         stein_vgd.bayes_infer(dataloader, epochs,

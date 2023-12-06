@@ -5,7 +5,7 @@ This folder contains tutorials for Bayesian Deep Learning with Push.
 
 - `Quick Start`_ is a tutorial for setting up and running Push
 - `Bayesian Deep Learning`_ is the basic tutorial for usage of Push.
-- `Deep Ensemble`_ is the basic tutorial for creating a deep ensemble in Push usage.
+- `Deep Ensemble` is the basic tutorial for creating a deep ensemble in Push usage.
 
 
 .. toctree::

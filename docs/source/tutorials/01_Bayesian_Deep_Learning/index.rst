@@ -14,6 +14,10 @@ This folder contains tutorials for Bayesian Deep Learning with Push.
 
    Quick_Start.ipynb
    Bayesian_Deep_Learning.ipynb
+   Regression_Tutorial.ipynb
+
+.. _Regression Tutorial:
+   ./Regression_Tutorial.ipynb
 
 .. _Bayesian Deep Learning:
    ./Bayesian_Deep_Learning.ipynb

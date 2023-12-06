@@ -90,8 +90,9 @@ class ReceiveFuncPDMSG(MSG):
 
 
 class ReceiveFuncAckPDMSG(MSG):
-    def __init__(self, pid_fid):
+    def __init__(self, pid_fid, result):
         self.pid_fid = pid_fid
+        self.result = result
 
 
 class ReceiveParametersPDMSG(MSG):

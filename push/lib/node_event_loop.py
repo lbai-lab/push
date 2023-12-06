@@ -234,7 +234,7 @@ class NodeEventLoop(Waitable):
                     raise e
                 
                 # Acknowledge
-                self.out_queue.put(ReceiveFuncAckPDMSG(sender))
+                self.out_queue.put(ReceiveFuncAckPDMSG(sender, y))
 
         return True        
 

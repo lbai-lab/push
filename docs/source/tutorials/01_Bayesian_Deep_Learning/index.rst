@@ -4,14 +4,13 @@ Bayesian Deep Learning
 This folder contains tutorials for Bayesian Deep Learning with Push.
 
 - `Bayesian Deep Learning`_ is the basic tutorial for usage of Push.
-- `Deep Ensemble` is the basic tutorial for creating a deep ensemble in Push usage.
+- `Deep Ensemble`_ is the basic tutorial for creating a deep ensemble in Push usage.
 
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
-   Quick_Start.ipynb
    Bayesian_Deep_Learning.ipynb
    Deep_Ensemble.ipynb
 

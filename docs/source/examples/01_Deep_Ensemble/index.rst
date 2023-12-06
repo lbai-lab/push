@@ -7,7 +7,7 @@ This folder contains tutorials for Deep Ensembles with Push.
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    deep_ensemble_imagenet.ipynb

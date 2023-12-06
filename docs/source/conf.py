@@ -8,10 +8,10 @@ import sys
 # sys.path.insert(0, os.path.abspath('../../'))
 # print("CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======S")
 print(os.getcwd())
-print("os.path.abspath(os.path.join(__file__, .., .., ..)",os.path.abspath(os.path.join(__file__, "..", "..", ".."))
+print("os.path.abspath(os.path.join(__file__, .., .., ..)",os.path.abspath(os.path.join(__file__, "..", "..", "..","push"))
 )
 
-sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..","push")))
 
 # Configuration file for the Sphinx documentation builder.
 
@@ -42,7 +42,7 @@ intersphinx_mapping = {
     'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
 }
 intersphinx_disabled_domains = ['std']
-
+nbsphinx_allow_errors = True
 templates_path = ['_templates']
 
 # -- Options for HTML output

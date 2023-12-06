@@ -4,9 +4,7 @@ Bayesian Deep Learning
 This folder contains tutorials for Bayesian Deep Learning with Push.
 
 - `Quick Start`_ is a tutorial for setting up and running Push
-
 - `Bayesian Deep Learning`_ is the basic tutorial for usage of Push.
-
 - `Deep Ensemble`_ is the basic tutorial for creating a deep ensemble in Push usage.
 
 
@@ -16,7 +14,7 @@ This folder contains tutorials for Bayesian Deep Learning with Push.
 
    Quick_Start.ipynb
    Bayesian_Deep_Learning.ipynb
-   Regression_Tutorial.ipynb
+   Deep_Ensemble.ipynb
 
 .. _Deep Ensemble Tutorial:
    ./Deep_Ensemble.ipynb

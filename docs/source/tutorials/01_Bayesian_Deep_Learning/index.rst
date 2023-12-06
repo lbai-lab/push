@@ -9,8 +9,8 @@ This folder contains tutorials for Bayesian Deep Learning with Push.
    :maxdepth: 1
    :hidden:
 
-   Bayesian_Deep_Learning.ipynb
+   bayesian_deep_learning.ipynb
 
 
 .. _Bayesian Deep Learning:
-   ./Bayesian_Deep_Learning.ipynb
+   ./bayesian_deep_learning.ipynb

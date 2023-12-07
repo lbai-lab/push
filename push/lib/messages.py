@@ -7,7 +7,7 @@ class MSG:
 
 
 # =============================================================================
-# Device Event Loop Messages
+# Node Event Loop Messages
 # =============================================================================
 
 class NodeEvtLoopInitMSG(MSG):

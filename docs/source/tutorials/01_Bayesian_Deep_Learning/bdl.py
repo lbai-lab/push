@@ -72,31 +72,13 @@ class MiniNN(nn.Module):
         return x
     
 
-class SimpleCNN(nn.Module):
-    def __init__(self):
-        super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(64 * 8 * 8, 128)
-        self.fc2 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = self.pool(nn.functional.relu(self.conv1(x)))
-        x = self.pool(nn.functional.relu(self.conv2(x)))
-        x = x.view(-1, 64 * 8 * 8)
-        x = nn.functional.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-
 # =============================================================================
 # Model
 # =============================================================================
 
-def push_dist_example(num_ensembles, mk_nn, *args, cache_size=8, view_size=8):
-    # Create a communicating ensemble of particles using mk_nn as a template
-    with ppush.PusH(mk_nn, *args, cache_size=cache_size, view_size=view_size) as push_dist:
+def push_dist_example(num_ensembles, mk_nn, *args):
+    # Create a communicating ensemble of particles using mk_nn(*args) as a template.
+    with ppush.PusH(mk_nn, *args) as push_dist:
         pids = []
         for i in range(num_ensembles):
             # 1. Each particle has a unique `pid`.

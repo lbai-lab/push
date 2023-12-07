@@ -42,8 +42,6 @@ class ParticleCache:
             c_idx = self._pid2cache[pid]
             module = self._active2pid[c_idx][1]
             torch.save(module.state_dict(), self._particle_disk[pid])
-        
-
 
     def _save_w_grads(self, pid: int, module: nn.Module) -> None:
         params = []
@@ -53,7 +51,6 @@ class ParticleCache:
             params += [param.detach().to("cpu")]
         self._module_disk[pid] = (params, params_grad)
 
-   
     def _load_w_grads(self, pid: int, module: nn.Module) -> None:
         params, params_grad = self._module_disk[pid]
 
@@ -61,7 +58,6 @@ class ParticleCache:
             p.data = param
             p.grad = param_grad
         
-            
     def create(self, pid: int, mk_optim: Callable) -> nn.Module:
         # Create module
         module = self.mk_module(*self.args)
@@ -122,7 +118,6 @@ class ParticleCache:
             if pid in self._pinned:
                 self._pinned.remove(pid)
         
-
     def try_read(self, pid: int, pin=False, msg=None) -> nn.Module:
         # if msg is not None:
         #     print(msg)
@@ -136,7 +131,6 @@ class ParticleCache:
             elif self._active2pid[c_idx][0] in self._pinned:
                 # Return None if its pinned
                 return None
-
        
             # Pin
             if pin:
@@ -144,7 +138,6 @@ class ParticleCache:
 
             # Prepare to swap
             active_pid, active_module = self._active2pid.pop(c_idx)
-
 
             # Save with gradients
             self._save_w_grads(active_pid, active_module)
@@ -162,7 +155,6 @@ class ParticleCache:
             
             # Restore optim
             # print(self._optim_cache)
-
             # self._optim_cache[pid] = self._mk_optims[pid](new_module.parameters())
 
             params_grad = []
@@ -170,7 +162,6 @@ class ParticleCache:
             for param in new_module.parameters():
                 params_grad += [param.grad.detach().to("cpu") if param.grad is not None else None]
                 params += [param.detach().to("cpu")]
-
             
             # Result
             return new_module

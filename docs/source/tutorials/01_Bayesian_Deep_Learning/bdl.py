@@ -21,6 +21,7 @@ class SineDataset(Dataset):
     def __getitem__(self, idx):
         return self.xs[idx], self.ys[idx]
 
+
 class SineWithNoiseDataset(Dataset):
     def __init__(self, N, D, begin, end, noise_std=0.05):
         self.xs = torch.linspace(begin, end, N).reshape(N, D)
@@ -33,20 +34,6 @@ class SineWithNoiseDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.xs[idx], self.ys[idx]
-
-# class SineWithNoiseDataset(Dataset):
-#     def __init__(self, batch_size, N, D, begin, end, noise_std=0.05):
-#         self.xs = torch.linspace(begin, end, batch_size * N * D).reshape(batch_size * N, D)
-#         true_ys = torch.sin(self.xs[:, 0]).reshape(-1, 1)
-#         noise = torch.normal(0, noise_std, size=true_ys.size())
-#         self.ys = true_ys + noise
-
-#     def __len__(self):
-#         return len(self.xs)
-
-#     def __getitem__(self, idx):
-#         return self.xs[idx], self.ys[idx]
-
 
 
 # =============================================================================

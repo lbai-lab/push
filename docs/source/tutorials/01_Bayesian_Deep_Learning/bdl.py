@@ -1,25 +1,14 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
-import math
 
-class SimpleCNN(nn.Module):
-    def __init__(self):
-        super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(64 * 8 * 8, 128)
-        self.fc2 = nn.Linear(128, 10)
+import push.push as ppush
+from push.bayes.ensemble import mk_optim
 
-    def forward(self, x):
-        x = self.pool(nn.functional.relu(self.conv1(x)))
-        x = self.pool(nn.functional.relu(self.conv2(x)))
-        x = x.view(-1, 64 * 8 * 8)
-        x = nn.functional.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
 
+# =============================================================================
+# Dataset
+# =============================================================================
 
 class SineDataset(Dataset):
     def __init__(self, batch_size, N, D, begin, end):
@@ -31,6 +20,7 @@ class SineDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.xs[idx], self.ys[idx]
+
 
 class SineWithNoiseDataset(Dataset):
     def __init__(self, batch_size, N, D, begin, end, noise_std=0.05):
@@ -60,8 +50,9 @@ class SineWithNoiseDataset2(Dataset):
         return self.xs[idx], self.ys[idx]
 
 
-
-
+# =============================================================================
+# Architecture
+# =============================================================================
 
 class BiggerNN(nn.Module):
     def __init__(self, n, input_dim, output_dim, hidden_dim):
@@ -81,6 +72,7 @@ class BiggerNN(nn.Module):
             x = self.minis[i](x)
         return self.fc(x)
 
+
 class MiniNN(nn.Module):
     def __init__(self, D):
         super(MiniNN, self).__init__()
@@ -93,3 +85,50 @@ class MiniNN(nn.Module):
         x = self.fc2(x)
         return x
     
+
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super(SimpleCNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.fc1 = nn.Linear(64 * 8 * 8, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+    def forward(self, x):
+        x = self.pool(nn.functional.relu(self.conv1(x)))
+        x = self.pool(nn.functional.relu(self.conv2(x)))
+        x = x.view(-1, 64 * 8 * 8)
+        x = nn.functional.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+# =============================================================================
+# Model
+# =============================================================================
+
+def push_dist_example(num_ensembles, mk_nn, *args, cache_size=8, view_size=8):
+    # Create a communicating ensemble of particles using mk_nn as a template
+    with ppush.PusH(mk_nn, *args, cache_size=cache_size, view_size=view_size) as push_dist:
+        pids = []
+        for i in range(num_ensembles):
+            # 1. Each particle has a unique `pid`.
+            # 2. `mk_optim` is a particle specific optimization method as in standard PyTorch.
+            # 3. Create a particle on device 0.
+            # 4. `receive` determines how each particle .
+            # 5. `state` is the state associated with each particle.
+            pids += [push_dist.p_create(mk_optim, device=0, receive={}, state={})]
+
+
+# =============================================================================
+# Main
+# =============================================================================
+
+if __name__ == "__main__":
+    num_ensembles = 4
+    input_dim = 1
+    output_dim = 1
+    hidden_dim = 64
+    n = 4
+    push_dist_example(num_ensembles, BiggerNN, n, input_dim, output_dim, hidden_dim)

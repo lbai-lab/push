@@ -46,6 +46,27 @@ class NodeEventLoop(Waitable):
                  devices: int,
                  cache_size: int,
                  view_size: int) -> None:
+        """
+        Initialize the NodeEventLoop.
+
+        Args:
+            mk_module (Callable): 
+                Function that creates a module.
+            args (List[any]): 
+                Arguments to pass to `mk_module`.
+            in_queue (mp.Queue): 
+                Receiving message queue.
+            out_queue (mp.Queue): 
+                Direct queue to PusH.
+            rank (int): 
+                Rank of NEL.
+            devices (int): 
+                Devices on this NEL.
+            cache_size (int): 
+                Size of particle cache.
+            view_size (int): 
+                Size of view cache.
+        """
         # Node information
         self.rank = rank                         # Rank of NEL
         self.devices = devices                   # Devices on this NEL
@@ -85,6 +106,12 @@ class NodeEventLoop(Waitable):
     # -----------------------------------------------------
 
     def _wait_particle_thread(self, pid: int) -> None:
+        """
+        Wait for the thread of a particle to finish execution.
+
+        Args:
+            pid (int): Particle identifier.
+        """
         pid_device = self._particle_to_device[pid]
         if pid_device in self._device_to_pthread:
             # If device is in use, finish execution of active particle that is using that device
@@ -93,6 +120,17 @@ class NodeEventLoop(Waitable):
             self.particle_caches[active_pid_device].release(active_pid, active_thread)
 
     def _context_switch_module(self, pid: int, pin=False, msg=None) -> nn.Module:
+        """
+        Perform a context switch and obtain the module associated with the given particle.
+
+        Args:
+            pid (int): Particle identifier.
+            pin (bool, optional): Whether to pin the module. Defaults to False.
+            msg (str, optional): Message for logging. Defaults to None.
+
+        Returns:
+            nn.Module: The module associated with the particle.
+        """
         pid_device = self._particle_to_device[pid]
         
         # Try read
@@ -115,6 +153,9 @@ class NodeEventLoop(Waitable):
     # -----------------------------------------------------
 
     def _start_event_loop(self) -> None:
+        """
+        Start the Node Event Loop.
+        """
         go = True
         while go:
             # Obtain message and dispatch
@@ -122,7 +163,15 @@ class NodeEventLoop(Waitable):
             go = self._dispatch(msg)
 
     def _dispatch(self, msg: MSG) -> bool:
+        """
+        Dispatch the given message.
 
+        Args:
+            msg (MSG): The message to dispatch.
+
+        Returns:
+            bool: True if the loop should continue, False otherwise.
+        """
         # -----------------------------------------------------
         # Particle functionality
         # -----------------------------------------------------
@@ -239,6 +288,14 @@ class NodeEventLoop(Waitable):
         return True        
 
     def _dispatch_receive_get_ack(self, msg: ReceiveGetAckMSG) -> None:
+        """Handles the 'ReceiveGetAckMSG' message, creating or updating a particle on the device event loop.
+
+        Args:
+            msg (ReceiveGetAckMSG): The 'ReceiveGetAckMSG' message.
+
+        Returns:
+            None
+        """
         # Create particle on this device event loop if it doesn't exist
         pid_device = self._particle_to_device[msg.pid]
         if not self.view_caches[pid_device].contains(msg.pid):
@@ -257,7 +314,29 @@ class NodeEventLoop(Waitable):
         self._results[msg.fid] = ParticleView(self.view_caches[self._particle_to_device[msg.pid]], msg.pid)
 
     def _wait(self, fid: int) -> any:
+        """Waits for the result of a future with the specified ID.
+
+        This method blocks until the result for the given future ID is available.
+
+        Args:
+            fid (int): The ID of the future to wait for.
+
+        Returns:
+            any: The result of the future.
+
+        Note:
+            This method may block the execution until the result becomes available.
+        """
         def check_results(fid: int):
+            """Check if the result for a specific future ID is available.
+
+            Args:
+                fid (int): The ID of the future to check.
+
+            Returns:
+                Tuple[bool, Optional[any]]: A tuple indicating whether the result is available
+                    and the result if available, or None if not available.
+            """
             # Check to see if we already have the result
             if fid in self._results:
                 result = self._results.pop(fid)
@@ -289,6 +368,15 @@ class NodeEventLoop(Waitable):
         return result[1]
 
     def _cleanup(self) -> None:
+        """Performs cleanup actions for the NodeEventLoop.
+
+        This method dispatches a NodeEvtLoopCleanupMSG, signaling the need for cleanup
+        actions to be performed within the NodeEventLoop.
+
+        Note:
+            This method is typically called when an exception occurs, triggering cleanup
+            procedures to ensure the system is left in a consistent state.
+        """
         self._dispatch(NodeEvtLoopCleanupMSG())
 
     # -----------------------------------------------------
@@ -296,11 +384,22 @@ class NodeEventLoop(Waitable):
     # -----------------------------------------------------
 
     def _create_future_id(self) -> int:
+        """Creates and returns a unique identifier for a future.
+
+        Returns:
+            int: A unique future identifier.
+        """
         fid = self._future_id
         self._future_id += 1
         return fid
 
     def _register_future(self, pid: int, fid: int) -> None:
+        """Registers a future for a particle with the given identifiers.
+
+        Args:
+            pid (int): Particle identifier.
+            fid (int): Future identifier.
+        """
         self._particle_to_futures[pid].add(fid)
         self._future_to_particle[fid] = pid
 
@@ -329,6 +428,18 @@ class NodeEventLoop(Waitable):
         self._hooks[pid][msg] = (fn, state)
 
     def send(self, send_particle: Particle, pid_curr: int, pid: int, msg_name: str, *args: any) -> PFuture:
+        """Sends a message to another particle for execution and returns a future.
+
+        Args:
+            send_particle (Particle): Particle instance sending the message.
+            pid_curr (int): Identifier of the current particle.
+            pid (int): Identifier of the target particle.
+            msg_name (str): Name of the message to be executed.
+            *args: Variable length argument list for the message.
+
+        Returns:
+            PFuture: A future representing the result of the execution.
+        """
         # Create future
         fid = self._create_future_id()
         self._register_future(pid_curr, fid)
@@ -369,6 +480,15 @@ class NodeEventLoop(Waitable):
             return PFuture(self, pid_curr, pid, fid)
 
     def get(self, pid_curr: int, pid: int) -> PFuture:
+        """Retrieves data from another particle and returns a future.
+
+        Args:
+            pid_curr (int): Identifier of the current particle.
+            pid (int): Identifier of the target particle.
+
+        Returns:
+            PFuture: A future representing the result of the retrieval.
+        """
         # Create future
         fid = self._create_future_id()
         self._register_future(pid_curr, fid)
@@ -421,6 +541,14 @@ class NodeEventLoop(Waitable):
             return PFuture(self, pid_curr, pid, fid)
 
     def wait(self, pfutures: List[PFuture]) -> List[any]:
+        """Waits for a list of futures to complete and returns the results.
+
+        Args:
+            pfutures (List[PFuture]): List of futures to wait for.
+
+        Returns:
+            List[any]: List of results corresponding to the completed futures.
+        """
         acc = []
         for pfuture in pfutures:
             acc += [pfuture.wait()]
@@ -431,6 +559,14 @@ class NodeEventLoop(Waitable):
     # -----------------------------------------------------
 
     def zero_grad(self, pid: int) -> PFuture:
+        """Clears gradients of the parameters in the particle's module.
+
+        Args:
+            pid (int): Identifier of the particle.
+
+        Returns:
+            PFuture: A future representing the completion of the operation.
+        """
         # Register future
         fid = self._create_future_id()
         self._register_future(pid, fid)
@@ -452,6 +588,16 @@ class NodeEventLoop(Waitable):
         return PFuture(self, pid, pid, fid, t=t)
 
     def forward(self, pid: int, x: torch.Tensor, *args: any) -> PFuture:
+        """Executes the forward pass of the particle's module.
+
+        Args:
+            pid (int): Identifier of the particle.
+            x (torch.Tensor): Input tensor for the forward pass.
+            *args: Variable length argument list for the forward pass.
+
+        Returns:
+            PFuture: A future representing the result of the forward pass.
+        """
         # Register future
         fid = self._create_future_id()
         self._register_future(pid, fid)
@@ -479,6 +625,18 @@ class NodeEventLoop(Waitable):
         return PFuture(self, pid, pid, fid, t=t)
 
     def step(self, pid: int, loss_fn: Callable, data: torch.Tensor, label: torch.Tensor, *args: any) -> PFuture:
+        """Performs a training step, including forward and backward passes.
+
+        Args:
+            pid (int): Identifier of the particle.
+            loss_fn (Callable): Loss function used in the training step.
+            data (torch.Tensor): Input data for the training step.
+            label (torch.Tensor): Ground truth labels for the training step.
+            *args: Variable length argument list for the training step.
+
+        Returns:
+            PFuture: A future representing the result of the training step.
+        """
         # Register future
         fid = self._create_future_id()
         self._register_future(pid, fid)

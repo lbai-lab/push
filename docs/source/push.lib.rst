@@ -1,4 +1,3 @@
-.. currentmodule:: push.lib
 
 push.lib
 ================

@@ -1,49 +1,67 @@
 from torch.utils.data import DataLoader
-from tqdm import tqdm
-from typing import *
+from typing import Callable, Any
 import torch
-
 from push.bayes.infer import Infer
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
 from push.lib.utils import detach_to_cpu
+from tqdm import tqdm
 
-
-# =============================================================================
-# Helper
-# =============================================================================
+# Helper functions
 
 def mk_optim(params):
-    """returns Adam optimizer"""
+    """Returns an Adam optimizer.
+
+    Args:
+        params: Parameters for optimization.
+
+    Returns:
+        torch.optim.Adam: Adam optimizer.
+    """
     return torch.optim.Adam(params, lr=1e-5, weight_decay=1e-3)
 
 
-# =============================================================================
 # Swag Training
-# =============================================================================
 
 def _swag_step(particle: Particle,
                loss_fn: Callable,
                data: torch.Tensor,
                label: torch.Tensor,
-               *args: any) -> None:
-    # calls one swag particle's step function
-    particle.step(loss_fn, data, label,*args)
+               *args: Any) -> None:
+    """Calls one SWAG particle's step function.
+
+    Args:
+        particle (Particle): SWAG particle.
+        loss_fn (Callable): Loss function.
+        data (torch.Tensor): Input data.
+        label (torch.Tensor): Ground truth labels.
+        *args: Additional arguments.
+    """
+    particle.step(loss_fn, data, label, *args)
 
 
 def update_theta(state, state_sq, param, param_sq, n):
-    """
+    """Updates the first and second moments and iterates the number of parameter settings averaged.
 
-    Updates the first and second moments and iterates the number of parameter settings averaged.
-
+    Args:
+        state: First moment.
+        state_sq: Second moment.
+        param: Parameters.
+        param_sq: Squared parameters.
+        n (int): Number of iterations.
     """
     for st, st_sq, p, p_sq in zip(state, state_sq, param, param_sq):
         st.data = (st.data * n + p.data)/(n+1)
         st_sq.data = (st_sq.data * n + p_sq.data)/(n+1)
 
 
-def _swag_swag(particle: Particle, reset: bool) -> None:    
-    # if reset, initializes mom1 and mom2, else updates mom1 and mom2
+def _swag_swag(particle: Particle, reset: bool) -> None:
+    """Initializes or updates moments for SWAG.
+
+    Args:
+        particle (Particle): SWAG particle.
+        reset (bool): Whether to reset or update moments.
+    """
     state = particle.state
     if reset:
         state[particle.pid] = {
@@ -59,7 +77,16 @@ def _swag_swag(particle: Particle, reset: bool) -> None:
 
 def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
                     pretrain_epochs: int, swag_epochs: int, swag_pids: list[int]) -> None:
-    # training function for mswag particle
+    """Training function for MSWAG particle.
+
+    Args:
+        particle (Particle): MSWAG particle.
+        dataloader (DataLoader): DataLoader.
+        loss_fn (Callable): Loss function.
+        pretrain_epochs (int): Number of pre-training epochs.
+        swag_epochs (int): Number of SWAG epochs.
+        swag_pids (list[int]): List of SWAG particle IDs.
+    """
     other_pids = [pid for pid in swag_pids if pid != particle.pid]
     
     # Pre-training loop
@@ -71,11 +98,11 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
             losses += [fut.wait()]
         print("Average epoch loss", torch.mean(torch.tensor(losses)))
     
-    # Initialize swag
+    # Initialize SWAG
     [particle.send(pid, "SWAG_SWAG", True) for pid in other_pids]
     _swag_swag(particle, True)
     
-    # Swag epochs
+    # SWAG epochs
     for e in tqdm(range(swag_epochs)):
         losses = []
         for data, label in dataloader:
@@ -90,9 +117,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
         print("Average epoch loss", torch.mean(torch.tensor(losses)))
 
 
-# =============================================================================
 # SWAG Inference
-# =============================================================================
 
 def _mswag_sample_entry(particle: Particle,
                         dataloader: DataLoader,
@@ -101,7 +126,18 @@ def _mswag_sample_entry(particle: Particle,
                         var_clamp: float,
                         num_samples: int,
                         num_models) -> None:
-    # TODO comment explaining this function
+    """SWAG sampling entry function.
+
+    Args:
+        particle (Particle): MSWAG particle.
+        dataloader (DataLoader): DataLoader.
+        loss_fn (Callable): Loss function.
+        scale (float): Scaling factor.
+        var_clamp (float): Variance clamping factor.
+        num_samples (int): Number of samples.
+        num_models (int): Number of models.
+    """
+    # TODO: Add comments explaining this function
     # Unpack state
     state = particle.state
     pid = particle.pid
@@ -139,7 +175,15 @@ def _mswag_sample(particle: Particle,
                   scale: float,
                   var_clamp: float,
                   num_samples: int) -> None:
-    """Inspired by https://github.com/wjmaddox/swa_gaussian/blob/master/swag/posteriors/swag.py
+    """SWAG sampling function.
+
+    Args:
+        particle (Particle): MSWAG particle.
+        dataloader (DataLoader): DataLoader.
+        loss_fn (Callable): Loss function.
+        scale (float): Scaling factor.
+        var_clamp (float): Variance clamping factor.
+        num_samples (int): Number of samples.
     """
     state = particle.state
     pid = particle.pid
@@ -212,6 +256,17 @@ def _mswag_sample_entry_regression(particle: Particle,
                                    var_clamp: float,
                                    num_samples: int,
                                    num_models) -> None:
+    """Regression version of SWAG sample entry function.
+
+    Args:
+        particle (Particle): MSWAG particle.
+        dataloader (DataLoader): DataLoader.
+        loss_fn (Callable): Loss function.
+        scale (float): Scaling factor.
+        var_clamp (float): Variance clamping factor.
+        num_samples (int): Number of samples.
+        num_models (int): Number of models.
+    """
     # Unpack state
     state = particle.state
     pid = particle.pid
@@ -228,13 +283,28 @@ def _mswag_sample_entry_regression(particle: Particle,
     return mean_preds
 
 
+
 def _mswag_sample_regression(particle: Particle,
                              dataloader: DataLoader,
                              loss_fn: Callable,
                              scale: float,
                              var_clamp: float,
                              num_samples: int) -> None:
-    """Modified for regression problems."""
+    """
+    Modified SWAG sample function for regression problems.
+
+    Args:
+        particle (Particle): The SWAG particle.
+        dataloader (DataLoader): DataLoader containing the data.
+        loss_fn (Callable): Loss function used for computing losses.
+        scale (float): Scaling factor for the SWAG sample.
+        var_clamp (float): Clamping value for the variance.
+        num_samples (int): Number of SWAG samples to generate.
+
+    Returns:
+        dict: Dictionary containing computed losses and predictions.
+
+    """
     state = particle.state
     pid = particle.pid
     # Gather
@@ -292,18 +362,28 @@ def _mswag_sample_regression(particle: Particle,
 
 class MultiSWAG(Infer):
     """
+    MultiSWAG class for running MultiSWAG models.
 
-    MultiSWAG class.
-    Used for running MultiSWAG models.
+    Args:
+        mk_nn (Callable): The base model to be ensembled.
+        *args: Any arguments required for the base model initialization.
+        num_devices (int): The desired number of GPU devices to utilize.
+        cache_size (int): The size of the cache used to store particles.
+        view_size (int): The number of particles to consider storing in the cache.
 
-    :param Callable mk_nn: The base model to be ensembled.
-    :param any *args: Any arguments required for base model to be initialized.
-    :param int num_devices: The desired number of gpu devices that will be utilized.
-    :param int cache_size: The size of cache used to store particles.
-    :param int view_size: The number of particles to consider storing in cache.
-    
     """
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
+        """
+        Initialize the MultiSWAG model.
+
+        Args:
+            mk_nn (Callable): The base model to be ensembled.
+            *args: Any arguments required for the base model initialization.
+            num_devices (int): The desired number of GPU devices to utilize.
+            cache_size (int): The size of the cache used to store particles.
+            view_size (int): The number of particles to consider storing in the cache.
+
+        """
         super(MultiSWAG, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         self.swag_pids = []
         self.sample_pids = []
@@ -315,20 +395,23 @@ class MultiSWAG(Infer):
                     mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                     mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
         """
-        Creates swag particles and launches a PusH distribution with MultiSWAG.
-        
-        :param Callable dataloader: Dataloader.
-        :param int, optional epochs: Number of epochs to train for. 
-        :param Callable loss_fn: Loss function to be used during training.
-        :param int, optional num_ensembles: The number of models to be ensembled.
-        :param any mk_optim: Returns an optimizer.
-        :param mswag_entry: Training loop for deep ensemble.
-        :param dict mswag_state: A dictionary to store state variables for ensembled models. i.e. in swag we need to know how
-           how many swag epochs have passed to properly calculate a running average of model weights.
-        :param mswag_sample_entry: Sampling function.
-        :param bool f_save: Flag to save each particle/model. Requires "particles" folder in root directory of the script calling train_deep_ensemble
+        Perform Bayesian inference using MultiSWAG.
 
-        :return: None
+        Args:
+            dataloader (DataLoader): DataLoader containing the data.
+            loss_fn (Callable): Loss function used for training.
+            num_models (int): Number of models to be ensembled.
+            lr (float): Learning rate for training.
+            pretrain_epochs (int): Number of epochs for pretraining.
+            swag_epochs (int): Number of epochs for SWAG training.
+            mswag_entry (Callable): Training loop for deep ensemble.
+            mswag_state (dict): State variables for ensembled models.
+            f_save (bool): Flag to save each particle/model.
+            mswag_sample_entry (Callable): Sampling function.
+            mswag_sample (Callable): MultiSWAG sample function.
+
+        Returns:
+            None
 
         """
         if "n" in mswag_state:
@@ -362,6 +445,20 @@ class MultiSWAG(Infer):
 
     def posterior_pred(self, dataloader: DataLoader, loss_fn=torch.nn.MSELoss(),
                        num_samples=20, scale=1.0, var_clamp=1e-30):
+        """
+        Generate posterior predictions using MultiSWAG.
+
+        Args:
+            dataloader (DataLoader): DataLoader containing the data.
+            loss_fn (Callable): Loss function used for computing losses.
+            num_samples (int): Number of samples to generate.
+            scale (float): Scaling factor for the SWAG sample.
+            var_clamp (float): Clamping value for the variance.
+
+        Returns:
+            None
+
+        """
         self.push_dist.p_wait([self.push_dist.p_launch(0, "SWAG_SAMPLE_ENTRY", dataloader, loss_fn, scale, var_clamp, num_samples, len(self.swag_pids))])
 
 
@@ -384,39 +481,27 @@ def train_mswag(dataloader: DataLoader,
     """
     Train a MultiSWAG model.
 
-    :param DataLoader dataloader: DataLoader containing the training data.
+    Args:
+        dataloader (DataLoader): DataLoader containing the training data.
+        loss_fn (Callable): Loss function used for training.
+        pretrain_epochs (int): Number of epochs for pretraining.
+        swag_epochs (int): Number of epochs for SWAG training.
+        num_models (int): Number of models to use in MultiSWAG.
+        cache_size (int): Size of the cache for MultiSWAG.
+        view_size (int): Size of the view for MultiSWAG.
+        nn (Callable): Callable function representing the neural network model.
+        *args: Additional arguments for the neural network.
+        num_devices (int): Number of devices for training (default is 1).
+        lr (float): Learning rate for training (default is 1e-3).
+        mswag_entry (Callable): MultiSWAG entry function (default is _mswag_particle).
+        mswag_state (dict): Initial state for MultiSWAG (default is {}).
+        f_save (bool): Flag to save the model (default is False).
+        mswag_sample_entry (Callable): MultiSWAG sample entry function (default is _mswag_sample_entry).
+        mswag_sample (Callable): MultiSWAG sample function (default is _mswag_sample).
 
-    :param Callable loss_fn: Loss function used for training.
+    Returns:
+        MultiSWAG: Trained MultiSWAG model.
 
-    :param int pretrain_epochs: Number of epochs for pretraining.
-
-    :param int swag_epochs: Number of epochs for SWAG training.
-
-    :param int num_models: Number of models to use in MultiSWAG.
-
-    :param int cache_size: Size of the cache for MultiSWAG.
-
-    :param int view_size: Size of the view for MultiSWAG.
-
-    :param Callable nn: Callable function representing the neural network model.
-
-    :param *args: Additional arguments for the neural network.
-
-    :param int num_devices: Number of devices for training (default is 1).
-
-    :param float lr: Learning rate for training (default is 1e-3).
-
-    :param Callable mswag_entry: MultiSWAG entry function (default is _mswag_particle).
-
-    :param dict mswag_state: Initial state for MultiSWAG (default is {}).
-
-    :param bool f_save: Flag to save the model (default is False).
-
-    :param Callable mswag_sample_entry: MultiSWAG sample entry function (default is _mswag_sample_entry).
-
-    :param Callable mswag_sample: MultiSWAG sample function (default is _mswag_sample).
-
-    :return MultiSWAG: Trained MultiSWAG model.
     """
     mswag = MultiSWAG(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     mswag.bayes_infer(dataloader, loss_fn, num_models, lr=lr, pretrain_epochs=pretrain_epochs,

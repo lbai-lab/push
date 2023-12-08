@@ -11,7 +11,7 @@ print(os.getcwd())
 print("os.path.abspath(os.path.join(__file__, .., .., ..)",os.path.abspath(os.path.join(__file__, "..", "..", "..","push"))
 )
 
-sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..","push")))
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..","push")))
 
 # Configuration file for the Sphinx documentation builder.
 

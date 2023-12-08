@@ -1,17 +1,16 @@
-
 push.lib
 ================
 This section contains documentation for the internal library of PusH 
 and is recommended for developers and advanced users only.
 
-context\_switch
+push.lib.context\_switch
 -------------------------------
 .. automodule:: context_switch
    :members:
    :undoc-members:
    :show-inheritance:
 
-messages 
+push.lib.messages 
 ------------------------
 
 .. automodule:: messages
@@ -19,7 +18,7 @@ messages
    :undoc-members:
    :show-inheritance:
 
-node\_event\_loop 
+push.lib.node\_event\_loop 
 ---------------------------------
 
 .. automodule:: node_event_loop
@@ -27,7 +26,7 @@ node\_event\_loop
    :undoc-members:
    :show-inheritance:
 
-utils 
+push.lib.utils 
 ---------------------
 
 .. automodule:: utils
@@ -35,7 +34,7 @@ utils
    :undoc-members:
    :show-inheritance:
 
-waitable
+push.lib.waitable
 ------------------------
 
 .. automodule:: waitable

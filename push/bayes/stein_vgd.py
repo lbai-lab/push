@@ -15,10 +15,14 @@ from push.bayes.utils import flatten, unflatten_like
 # =============================================================================
 
 def mk_empty_optim(params):
-    # Limitiation must be global
     """
+    Helper function to create an empty optimizer.
 
-    Returns nothing
+    Args:
+        params: Model parameters.
+
+    Returns:
+        None.
 
     """
     return None
@@ -27,24 +31,23 @@ def mk_empty_optim(params):
 # -----------------------------------------------------
 # Prior
 # -----------------------------------------------------
-    
+
 def normal_prior(params: Iterable[torch.Tensor]) -> list[torch.Tensor]:
     """
-    Returns the gradients of a set of tensors with respect to a normal distribution.
+    Compute gradients with respect to a normal distribution.
 
-    This function iterates over the provided tensors, calculates the log probability of each tensor under a normal distribution
-    with mean 0.0 and standard deviation 1.0. It then computes and appends the gradients with respect to each parameter.
-    The resulting list contains the gradient tensors.
-    
-    :param Iterable[torch.Tensor] params: A collection of tensors whose gradients will be calculated.
-    :return A list containing the computed gradients for each parameter.
-    :rtype list[torch.Tensor]
+    This function calculates the gradients with respect to a normal distribution with mean 0.0 and standard deviation 1.0.
+
+    Args:
+        params (Iterable[torch.Tensor]): Collection of tensors for which gradients are computed.
+
+    Returns:
+        List[torch.Tensor]: List of computed gradients for each parameter.
 
     """
     normal = Normal(0.0, 1.0)
     grads = []
     for param in params:
-        # TODO: change me for different NNs
         y = torch.sum(normal.log_prob(param.requires_grad_()))
         grads += [torch.autograd.grad(y, param, grad_outputs=torch.ones_like(y), create_graph=True,)[0]]
     return grads
@@ -56,20 +59,21 @@ def normal_prior(params: Iterable[torch.Tensor]) -> list[torch.Tensor]:
 
 def torch_squared_exp_kernel(x: torch.Tensor, y: torch.Tensor, length_scale: float) -> torch.Tensor:
     """
-    Computes the squared exponential kernel between two tensors.
+    Compute the squared exponential kernel between two tensors.
 
-    This function calculates the squared exponential kernel value between two tensors `x` and `y`. 
-    The characteristic length scale of the kernel is specified by `length_scale`.
-    The squared exponential kernel is given by exp(-0.5 * (x - y)^2 / length_scale^2).
+    This function calculates the squared exponential kernel value between two tensors `x` and `y`.
+    The kernel has a characteristic length scale specified by `length_scale`.
 
-    :param torch.Tensor x: The first input tensor.
-    :param torch.Tensor y: The second input tensor.
-    :param float length_scale: The characteristic length scale of the kernel.
+    Args:
+        x (torch.Tensor): First input tensor.
+        y (torch.Tensor): Second input tensor.
+        length_scale (float): Characteristic length scale of the kernel.
 
-    :return The computed squared exponential kernel value.
-    :rtype torch.Tensor
+    Returns:
+        torch.Tensor: Computed squared exponential kernel value.
 
-    :note This kernel is commonly used in Gaussian Process regression for modeling smooth functions.
+    Note:
+        The kernel is commonly used in Gaussian Process regression for modeling smooth functions.
 
     """
     diff = (x - y) / length_scale
@@ -78,16 +82,17 @@ def torch_squared_exp_kernel(x: torch.Tensor, y: torch.Tensor, length_scale: flo
 
 def torch_squared_exp_kernel_grad(x: torch.Tensor, y: torch.Tensor, length_scale: float) -> torch.Tensor:
     """
-    Computes the gradient of the squared exponential kernel with respect to its inputs.
+    Compute the gradient of the squared exponential kernel.
 
-    This function calculates the gradient of the squared exponential kernel with respect to its inputs, 
-    `x` and `y`, as well as with respect to the characteristic length scale `length_scale`.
+    This function calculates the gradient of the squared exponential kernel with respect to its inputs.
 
-    :param torch.Tensor x: The first input tensor.
-    :param torch.Tensor y: The second input tensor.
-    :param float length_scale: The characteristic length scale of the kernel.
-    :return The computed gradient of the squared exponential kernel.
-    :rtype torch.Tensor
+    Args:
+        x (torch.Tensor): First input tensor.
+        y (torch.Tensor): Second input tensor.
+        length_scale (float): Characteristic length scale of the kernel.
+
+    Returns:
+        torch.Tensor: Computed gradient of the squared exponential kernel.
 
     """
     prefactor = (x - y) / (length_scale ** 2)
@@ -99,25 +104,34 @@ def torch_squared_exp_kernel_grad(x: torch.Tensor, y: torch.Tensor, length_scale
 # =============================================================================
 
 def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
-    # TODO comment explaining this function
+    """
+    Perform SVGD update for the leader particle.
+
+    Args:
+        particle (Particle): Leader particle being operated on.
+        prior: Prior information for Bayesian inference.
+        loss_fn (Callable): Loss function to be used during training.
+        lengthscale: Characteristic length scale of the SVGD kernel.
+        lr (float): Learning rate for optimization.
+        dataloader (DataLoader): Dataloader for training data.
+        epochs (int): Number of training epochs.
+
+    """
     n = len(particle.particle_ids())
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
     for e in tqdm(range(epochs)):
         losses = []
         for data, label in dataloader:
-            # 1. Step every particle
             fut = particle.step(loss_fn, data, label)
             futs = [particle.send(pid, "SVGD_STEP", loss_fn, data, label) for pid in other_particles]
             fut.wait(); [f.wait() for f in futs]
 
-            # 2. Gather every other particles parameters
-            particles = {pid: (particle.get(pid) if pid != particle.pid else 
+            particles = {pid: (particle.get(pid) if pid != particle.pid else
                 list(particle.module.parameters())) for pid in particle.particle_ids()}
             for pid in other_particles:
                 particles[pid] = particles[pid].wait()
 
-            # 3. Compute kernel and kernel gradients
             update = {}
             for pid1, params1 in particles.items():
                 params1 = list(particles[pid1].view().parameters()) if pid1 != particle.pid else params1
@@ -126,14 +140,12 @@ def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, 
                 for pid2, params2 in particles.items():
                     params2 = list(particles[pid2].view().parameters()) if pid2 != particle.pid else params2
 
-                    # Compute kernel
                     p_j = flatten(params2)
                     p_j_grad = flatten([p.grad if p.grad is not None else torch.zeros_like(p) for p in params2])
                     update[pid1] += torch_squared_exp_kernel(p_j, p_i, lengthscale) * p_j_grad
                     update[pid1] += torch_squared_exp_kernel_grad(p_j, p_i, lengthscale)
                 update[pid1] = update[pid1] / n
 
-            # 4. Send kernel
             futs = [particle.send(pid, "SVGD_FOLLOW", lr, update[pid]) for pid in other_particles]
             [f.wait() for f in futs]
             _svgd_follow(particle, lr, update[particle.pid])
@@ -145,20 +157,30 @@ def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, 
 
 
 def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
-    # TODO comment explaining this function
+    """
+    Perform SVGD update for the leader particle with memeff kernel computation.
+
+    Args:
+        particle (Particle): Leader particle being operated on.
+        prior: Prior information for Bayesian inference.
+        loss_fn (Callable): Loss function to be used during training.
+        lengthscale: Characteristic length scale of the SVGD kernel.
+        lr (float): Learning rate for optimization.
+        dataloader (DataLoader): Dataloader for training data.
+        epochs (int): Number of training epochs.
+
+    """
     n = len(particle.particle_ids())
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
     for e in tqdm(range(epochs)):
         losses = []
         for data, label in dataloader:
-            # 1. Step every particle
             fut = particle.step(loss_fn, data, label)
             futs = [particle.send(pid, "SVGD_STEP", loss_fn, data, label) for pid in other_particles]
             fut.wait(); [f.wait() for f in futs]
 
-            # 2. Gather every other particles parameters
-            particles = {pid: (particle.get(pid) if pid != particle.pid else 
+            particles = {pid: (particle.get(pid) if pid != particle.pid else
                 list(particle.module.parameters())) for pid in particle.particle_ids()}
             for pid in other_particles:
                 particles[pid] = particles[pid].wait()
@@ -170,7 +192,6 @@ def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscal
                 for pid2, params2 in particles.items():
                     params2 = list(particles[pid2].view().parameters()) if pid2 != particle.pid else params2
 
-                    # Compute kernel
                     p_j = flatten(params2)
                     p_j_grad = flatten([p.grad if p.grad is not None else torch.zeros_like(p) for p in params2])
                     diff = (p_j - p_i) / lengthscale
@@ -179,14 +200,10 @@ def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscal
                     diff.mul_(-k / lengthscale)
                     update.add_(p_j_grad, alpha=k)
                     update.add_(diff)
-                    # update += torch_squared_exp_kernel(p_j, p_i, lengthscale) * p_j_grad
-                    # update += torch_squared_exp_kernel_grad(p_j, p_i, lengthscale)
                 update = update / n
                 return update
 
-            # 3. Compute kernel and kernel gradients
             for pid1, params1 in particles.items():
-                # 4. Send kernel
                 if pid1 != particle.pid:
                     update = compute_update(pid1, params1)
                     particle.send(pid, "SVGD_FOLLOW", lr, update).wait()
@@ -204,17 +221,32 @@ def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscal
 
 
 def _svgd_step(particle: Particle, loss_fn: Callable, data: torch.Tensor, label: torch.Tensor) -> None:
-    # TODO comment explaining this function
+    """
+    Perform a single step of SVGD update.
+
+    Args:
+        particle (Particle): Particle being operated on.
+        loss_fn (Callable): Loss function to be used during training.
+        data (torch.Tensor): Input data tensor.
+        label (torch.Tensor): Target label tensor.
+
+    """
     return particle.step(loss_fn, data, label)
 
 
 def _svgd_follow(particle: Particle, lr: float, update: List[torch.Tensor]) -> None:
-    # TODO comment explaining this function
-    # 1. Unflatten
+    """
+    Update particle parameters based on SVGD kernel information.
+
+    Args:
+        particle (Particle): Particle being operated on.
+        lr (float): Learning rate for optimization.
+        update (List[torch.Tensor]): Update tensor.
+
+    """
     params = list(particle.module.parameters())
     updates = unflatten_like(update.unsqueeze(0), params)
-    
-    # 2. Apply the update to the input particle
+
     with torch.no_grad():
         for p, up in zip(params, updates):
             p.add_(up.real, alpha=-lr)
@@ -223,7 +255,7 @@ def _svgd_follow(particle: Particle, lr: float, update: List[torch.Tensor]) -> N
 class SteinVGD(Infer):
     """SteinVGD Class.
 
-    This class extends the 'Infer' class and uses Stein Variational Gradient Descent (SteinVGD) 
+    This class extends the 'Infer' class and uses Stein Variational Gradient Descent (SteinVGD)
     for Bayesian inference tasks.
 
     Args:
@@ -232,32 +264,41 @@ class SteinVGD(Infer):
         num_devices (int): The number of devices to be used for computation. Default is 1.
         cache_size (int): The size of the cache for storing computed gradients. Default is 4.
         view_size (int): The size of the view for distributed computations. Default is 4.
+
     """
 
     def __init__(self, mk_nn: Callable, *args: any, num_devices=1, cache_size=4, view_size=4) -> None:
+        """
+        Initialize the SteinVGD model.
+
+        Args:
+            mk_nn (Callable): Function to create the neural network architecture.
+            *args (any): Additional arguments to be passed to the 'Infer' class.
+            num_devices (int): Number of devices to be used for computation. Default is 1.
+            cache_size (int): Size of the cache for storing computed gradients. Default is 4.
+            view_size (int): Size of the view for distributed computations. Default is 4.
+
+        """
         super(SteinVGD, self).__init__(mk_nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
-        
+
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
                     prior=None, loss_fn=torch.nn.MSELoss(),
                     num_particles=1, lengthscale=1.0, lr=1e-3,
                     svgd_entry=_svgd_leader, svgd_state={}):
-        """Performs Bayesian inference using SteinVGD.
-
-        This method performs Bayesian inference using Stein Variational Gradient Descent (SteinVGD).
-
-        Overridden from the `Infer` class.
+        """
+        Perform Bayesian inference using SteinVGD.
 
         Args:
-            dataloader (DataLoader): The dataloader to use for training.
-            epochs (int): The number of epochs to train for.
-            prior (Callable, optional): Prior information for Bayesian inference. Default is None.
-            loss_fn (Callable, optional): The loss function to be used during training. Default is torch.nn.MSELoss().
-            num_particles (int, optional): The number of particles to use in SVGD. Default is 1.
-            lengthscale (float, optional): The characteristic length scale of the SVGD kernel. Default is 1.0.
-            lr (float, optional): The learning rate for optimization. Default is 1e-3.
-            svgd_entry (Callable, optional): The SVGD entry function. Default is _svgd_leader.
-            svgd_state (dict, optional): Additional state information for SVGD. Default is {}.
+            dataloader (DataLoader): Dataloader for training.
+            epochs (int): Number of training epochs.
+            prior: Prior information for Bayesian inference. Default is None.
+            loss_fn (Callable): Loss function to be used during training. Default is torch.nn.MSELoss().
+            num_particles (int): Number of particles to use in SVGD. Default is 1.
+            lengthscale (float): Characteristic length scale of the SVGD kernel. Default is 1.0.
+            lr (float): Learning rate for optimization. Default is 1e-3.
+            svgd_entry (Callable): SVGD entry function. Default is _svgd_leader.
+            svgd_state (dict): Additional state information for SVGD. Default is {}.
 
         """
         pid_leader = self.push_dist.p_create(mk_empty_optim, device=0, receive={

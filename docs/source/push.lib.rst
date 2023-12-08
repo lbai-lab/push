@@ -1,3 +1,4 @@
+.. currentmodule:: push.lib
 push.lib
 ================
 This section contains documentation for the internal library of PusH 

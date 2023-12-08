@@ -1,5 +1,5 @@
 import torch
-from typing import List, Callable, Dict, Any
+from typing import *
 
 
 class MSG:

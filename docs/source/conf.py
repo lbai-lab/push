@@ -9,6 +9,9 @@ import sys
 # print("CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======S")
 print(os.getcwd())
 path = os.path.abspath(os.path.join(__file__,"..","..",".."))
+lib_path = os.path.abspath(os.path.join(__file__,"..","..","..","push", "lib"))
+bayes_path = os.path.abspath(os.path.join(__file__,"..","..","..","push", "bayes"))
+
 print("path: ",path)
 
 def list_directories(path):
@@ -20,6 +23,9 @@ directories_list = list_directories(path)
 print("List of directories in {}: {}".format(path, directories_list))
 
 sys.path.append(path)
+sys.path.append(lib_path)
+sys.path.append(bayes_path)
+
 
 # Configuration file for the Sphinx documentation builder.
 

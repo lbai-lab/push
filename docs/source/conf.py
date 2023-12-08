@@ -8,8 +8,16 @@ import sys
 # sys.path.insert(0, os.path.abspath('../../'))
 # print("CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======S")
 print(os.getcwd())
-print("os.path.abspath(os.path.join(__file__, .., .., ..)",os.path.abspath(os.path.join(__file__, "..", "..", "..","push"))
-)
+path = os.path.abspath(os.path.join(__file__))
+print("path: ",path)
+
+def list_directories(path):
+    directories = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+    return directories
+directories_list = list_directories(path)
+
+
+print("List of directories in {}: {}".format(path, directories_list))
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..","push")))
 

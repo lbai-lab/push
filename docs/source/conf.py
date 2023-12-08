@@ -8,7 +8,7 @@ import sys
 # sys.path.insert(0, os.path.abspath('../../'))
 # print("CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======CWD======S")
 print(os.getcwd())
-path = os.path.abspath(os.path.join(__file__,"..","..","..","push"))
+path = os.path.abspath(os.path.join(__file__,"..","..",".."))
 print("path: ",path)
 
 def list_directories(path):

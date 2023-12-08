@@ -19,7 +19,7 @@ directories_list = list_directories(path)
 
 print("List of directories in {}: {}".format(path, directories_list))
 
-# sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..","push")))
+sys.path.append(path)
 
 # Configuration file for the Sphinx documentation builder.
 

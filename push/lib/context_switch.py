@@ -7,8 +7,30 @@ import torch.nn as nn
 
 class ParticleCache:
     """Loads particles on and off the accelerator.
+
+    Attributes:
+        mk_module (Callable): The function to create a new module.
+        args (List[any]): The arguments to pass to the `mk_module` function.
+        cache_size (int): The maximum cache size.
+        device (int): The device id.
+        lock (threading.Lock): The lock for managing pinned particles.
+
     """    
     def __init__(self, mk_module: Callable, args: List[any], cache_size: int, device: int, lock: threading.Lock) -> None:
+        """
+        Initializes a ParticleCache instance.
+
+        Args:
+            mk_module (Callable): The function to create a new module.
+            args (List[any]): The arguments to pass to the `mk_module` function.
+            cache_size (int): The maximum cache size.
+            device (int): The device id.
+            lock (threading.Lock): The lock for managing pinned particles.
+
+        Returns:
+            None
+
+        """
         # Module
         self.mk_module = mk_module
         self.args = args
@@ -32,6 +54,17 @@ class ParticleCache:
         self._lock = lock               # lock for pinned pid
 
     def save_to_disk(self, pid, path="./particles"):
+        """
+        Saves the module associated with a particle to disk.
+
+        Args:
+            pid (int): The particle id.
+            path (str, optional): The path to save the particle. Defaults to "./particles".
+
+        Returns:
+            None
+
+        """
         module = self.mk_module(*self.args)
         if pid in self._module_disk:
             params, _ = self._module_disk[pid]
@@ -44,6 +77,17 @@ class ParticleCache:
             torch.save(module.state_dict(), self._particle_disk[pid])
 
     def _save_w_grads(self, pid: int, module: nn.Module) -> None:
+        """
+        Save module parameters and gradients to disk.
+
+        Args:
+            pid (int): The particle id.
+            module (nn.Module): The module to save.
+
+        Returns:
+            None
+
+        """
         params = []
         params_grad = []
         for param in module.parameters():
@@ -52,6 +96,17 @@ class ParticleCache:
         self._module_disk[pid] = (params, params_grad)
 
     def _load_w_grads(self, pid: int, module: nn.Module) -> None:
+        """
+        Load module parameters and gradients from disk.
+
+        Args:
+            pid (int): The particle id.
+            module (nn.Module): The module to load the parameters and gradients into.
+
+        Returns:
+            None
+
+        """
         params, params_grad = self._module_disk[pid]
 
         for p, param, param_grad in zip(module.parameters(), params, params_grad):
@@ -59,6 +114,17 @@ class ParticleCache:
             p.grad = param_grad
         
     def create(self, pid: int, mk_optim: Callable) -> nn.Module:
+        """
+        Create a new module and manage the cache.
+
+        Args:
+            pid (int): The particle id.
+            mk_optim (Callable): The function to create a new optimizer.
+
+        Returns:
+            nn.Module: The created module.
+
+        """
         # Create module
         module = self.mk_module(*self.args)
         module = module.to(self._device)
@@ -98,6 +164,16 @@ class ParticleCache:
         return module
 
     def try_pin(self, pid: int) -> bool:
+        """
+        Attempt to pin a particle.
+
+        Args:
+            pid (int): The particle id.
+
+        Returns:
+            bool: True if the pin attempt is successful, False otherwise.
+
+        """
         c_idx = self._pid2cache[pid]
         with self._lock:
             if self._active2pid[c_idx][0] == pid:
@@ -107,6 +183,17 @@ class ParticleCache:
                 return False
 
     def release(self, pid, thread):
+        """
+        Release a pinned particle.
+
+        Args:
+            pid: The particle id.
+            thread: The thread associated with the particle.
+
+        Returns:
+            None
+
+        """
         with self._lock:
             thread.join()
             if pid in self._pinned:
@@ -114,11 +201,33 @@ class ParticleCache:
         c_idx = self._pid2cache[pid]
 
     def unpin(self, pid: int) -> None:
+        """
+        Unpin a particle.
+
+        Args:
+            pid (int): The particle id.
+
+        Returns:
+            None
+
+        """
         with self._lock:
             if pid in self._pinned:
                 self._pinned.remove(pid)
         
     def try_read(self, pid: int, pin=False, msg=None) -> nn.Module:
+        """
+        Attempt to read a particle.
+
+        Args:
+            pid (int): The particle id.
+            pin (bool, optional): Whether to pin the particle. Defaults to False.
+            msg: Additional message. Defaults to None.
+
+        Returns:
+            nn.Module: The module associated with the particle.
+
+        """
         # if msg is not None:
         #     print(msg)
         c_idx = self._pid2cache[pid]
@@ -167,19 +276,63 @@ class ParticleCache:
             return new_module
 
     def contains(self, pid):
+        """
+        Check if the cache contains a particle.
+
+        Args:
+            pid: The particle id.
+
+        Returns:
+            bool: True if the cache contains the particle, False otherwise.
+
+        """
         return pid in self._pid2cache
 
     def particles(self) -> List[int]:
+        """
+        Returns a list of particle ids in the cache.
+
+        Returns:
+            List[int]: A list of particle ids.
+
+        """
         return self._pid2cache.keys()
     
     def __str__(self) -> str:
+        """
+        Returns a string representation of the ParticleCache instance.
+
+        Returns:
+            str: A string representation.
+
+        """
         return f"active2pid: {str({k: v[0] for k, v in self._active2pid.items()})}\n cache2pid: {str(self._cache2pid)}"
     
 
 class ParticleCacheLRU:
     """Loads particles on and off the accelerator.
+
+    Attributes:
+        mk_module (Callable): The function to create a new module.
+        args (List[any]): The arguments to pass to the `mk_module` function.
+        cache_size (int): The maximum cache size.
+        device (int): The device id.
+
     """    
     def __init__(self, mk_module: Callable, args: List[any], cache_size: int, device: int) -> None:
+        """
+        Initializes a ParticleCacheLRU instance.
+
+        Args:
+            mk_module (Callable): The function to create a new module.
+            args (List[any]): The arguments to pass to the `mk_module` function.
+            cache_size (int): The maximum cache size.
+            device (int): The device id.
+
+        Returns:
+            None
+
+        """
         # Module
         self.mk_module = mk_module
         self.args = args
@@ -197,6 +350,18 @@ class ParticleCacheLRU:
         self._lru = []
 
     def _save(self, pid: int, module: nn.Module, disk=False) -> None:
+        """
+        Save module to disk.
+
+        Args:
+            pid (int): The particle id.
+            module (nn.Module): The module to save.
+            disk (bool, optional): Whether to save to disk. Defaults to False.
+
+        Returns:
+            None
+
+        """
         if disk:
             torch.save(module.state_dict(), self._particle_disk[pid])
         else:
@@ -205,6 +370,18 @@ class ParticleCacheLRU:
             self._module_disk[pid] = tmp
 
     def _load(self, pid: int, module: nn.Module, disk=False) -> None:
+        """
+        Load module from disk.
+
+        Args:
+            pid (int): The particle id.
+            module (nn.Module): The module to load the parameters into.
+            disk (bool, optional): Whether to load from disk. Defaults to False.
+
+        Returns:
+            None
+
+        """
         if disk:
             checkpoint = torch.load(self._particle_disk[pid])
             module.load_state_dict(checkpoint)
@@ -212,6 +389,16 @@ class ParticleCacheLRU:
             module.load_state_dict(self._module_disk[pid].state_dict())
             
     def read(self, pid: int) -> nn.Module:
+        """
+        Read a particle from cache.
+
+        Args:
+            pid (int): The particle id.
+
+        Returns:
+            nn.Module: The module associated with the particle.
+
+        """
         if pid in self._module_cache:
             return self._module_cache[pid]
         else:
@@ -240,6 +427,17 @@ class ParticleCacheLRU:
                 raise ValueError("Shouldn't happen ...")
 
     def write(self, pid: int, module: nn.Module) -> None:
+        """
+        Write a particle to cache.
+
+        Args:
+            pid (int): The particle id.
+            module (nn.Module): The module to write to cache.
+
+        Returns:
+            None
+
+        """
         if pid in self._module_cache:
             self._module_cache[pid] = module
         else:
@@ -252,6 +450,17 @@ class ParticleCacheLRU:
             self._lru += [pid]
 
     def create(self, pid: int, mk_optim: Callable) -> nn.Module:
+        """
+        Create a new module and manage the cache.
+
+        Args:
+            pid (int): The particle id.
+            mk_optim (Callable): The function to create a new optimizer.
+
+        Returns:
+            nn.Module: The created module.
+
+        """
         self._particle_disk[pid] = f"particles/device{self._device}_particle{pid}.pth"
         module = self.mk_module(*self.args)
         module = module.to(self._device)
@@ -263,7 +472,24 @@ class ParticleCacheLRU:
         return module
 
     def contains(self, pid):
+        """
+        Check if the cache contains a particle.
+
+        Args:
+            pid: The particle id.
+
+        Returns:
+            bool: True if the cache contains the particle, False otherwise.
+
+        """
         return pid in self._module_cache
 
     def particles(self) -> List[int]:
+        """
+        Get a list of particle ids in the cache.
+
+        Returns:
+            List[int]: A list of particle ids.
+
+        """
         return self._module_cache.keys()

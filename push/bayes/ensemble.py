@@ -101,6 +101,7 @@ class Ensemble(Infer):
         if f_save:
             self.push_dist.save()
 
+
 # =============================================================================
 # Deep Ensemble Training
 # =============================================================================
@@ -132,4 +133,3 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
     ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, num_ensembles=num_ensembles, mk_optim=mk_optim,
                          ensemble_entry=ensemble_entry, ensemble_state=ensemble_state)
     return ensemble
-

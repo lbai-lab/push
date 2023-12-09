@@ -162,3 +162,4 @@ class Infer:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.push_dist.__exit__(exc_type, exc_value, traceback)
+        

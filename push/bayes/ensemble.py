@@ -148,9 +148,11 @@ class Ensemble(Infer):
 
     def posterior_pred(self, data: DataLoader, f_reg=True, mode="mean") -> torch.Tensor:
         if isinstance(data, torch.Tensor):
-            return self.push_dist.p_wait([self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)])
+            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)
+            return self.push_dist.p_wait([fut])[fut._fid]
         elif isinstance(data, DataLoader):
-            return self.push_dist.p_wait([self.push_dist.p_launch(0, "LEADER_PRED_DL", data, f_reg, mode)])
+            fut = self.push_dist.p_launch(0, "LEADER_PRED_DL", data, f_reg, mode)
+            return self.push_dist.p_wait([fut])[fut._fid]
         else:
             raise ValueError(f"Data of type {type(data)} not supported ...")
 

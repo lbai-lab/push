@@ -78,7 +78,8 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         else:
             raise ValueError(f"Mode {mode} not supported ...")
     else:
-        raise NotImplementedError()
+        cls = t_preds.softmax(dim=1).argmax(dim=1)
+        return torch.mode(cls, dim=1)
 
 
 def _ensemble_pred(particle: Particle, data) -> None:

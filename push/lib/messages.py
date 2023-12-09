@@ -43,6 +43,9 @@ class NELBroadcastParticlesMSG(MSG):
         self.out_queues = out_queues
         self.particle_to_device = particle_to_device
 
+    def __str__(self) -> str:
+        return f"NELBroadcastParticlesMSG({self.in_queues}, {self.out_queues}, {self.particle_to_device})"
+
 
 class NELBroadcastParticlesAckMSG(MSG):
     """
@@ -62,6 +65,9 @@ class NELSaveModel(MSG):
     def __init__(self, pid_fid: Tuple[int, int]):
         self.pid_fid = pid_fid
 
+    def __str__(self) -> str:
+        return f"NELSaveModel({self.pid_fid})"
+
 
 class NELSaveModelAckPDMSG(MSG):
     """
@@ -72,6 +78,9 @@ class NELSaveModelAckPDMSG(MSG):
     """
     def __init__(self, pid_fid: Tuple[int, int]):
         self.pid_fid = pid_fid
+
+    def __str__(self) -> str:
+        return f"NELSaveModelAckPDMSG({self.pid_fid})"
 
 
 # =============================================================================
@@ -100,6 +109,9 @@ class ReceiveParticleInitPDMSG(MSG):
         self.receive = receive
         self.state = state
 
+    def __str__(self) -> str:
+        return f"ReceiveParticleInitPDMSG({self.device}, {self.pid}, {self.mk_optim}, {self.receive}, {self.state})"
+
 
 class ReceiveParticleInitAckPDMSG(MSG):
     """
@@ -124,6 +136,9 @@ class ReceiveRegisterPDMSG(MSG):
         self.msg = msg
         self.fn = fn
         self.state = state
+
+    def __str__(self) -> str:
+        return f"ReceiveRegisterPDMSG({self.pid}, {self.msg}, {self.fn}, {self.state})"
 
 
 class ReceiveRegisterAckPDMSG(MSG):
@@ -154,6 +169,9 @@ class ReceiveFuncPDMSG(MSG):
         self.msg = msg
         self.args = args
 
+    def __str__(self) -> str:
+        return f"ReceiveFuncPDMSG({self.pid_fid}, {self.pid_to}, {self.msg}, {self.args})"
+
 
 class ReceiveFuncAckPDMSG(MSG):
     """
@@ -166,6 +184,9 @@ class ReceiveFuncAckPDMSG(MSG):
     def __init__(self, pid_fid: Tuple[int, int], result: Any):
         self.pid_fid = pid_fid
         self.result = result
+
+    def __str__(self) -> str:
+        return f"ReceiveFuncAckPDMSG({self.pid_fid}, {self.result})"
 
 
 class ReceiveParametersPDMSG(MSG):
@@ -180,6 +201,9 @@ class ReceiveParametersPDMSG(MSG):
         self.pid_fid = pid_fid
         self.pid = pid
 
+    def __str__(self) -> str:
+        return f"ReceiveParametersPDMSG({self.pid_fid}, {self.pid})"
+
 
 class ReceiveParametersAckPDMSG(MSG):
     """
@@ -192,6 +216,9 @@ class ReceiveParametersAckPDMSG(MSG):
     def __init__(self, pid_fid: Tuple[int, int], params: List[torch.Tensor]):
         self.pid_fid = pid_fid
         self.params = params
+
+    def __str__(self) -> str:
+        return f"ReceiveParametersAckPDMSG({self.pid_fid}, {self.params})"
 
 
 # =============================================================================
@@ -213,6 +240,9 @@ class ReceiveFuncMSG(MSG):
         self.pid = pid
         self.msg_name = msg_name
         self.args = args
+
+    def __str__(self) -> str:
+        return f"ReceiveFuncMSG({self.pid_fid}, {self.pid}, {self.msg_name}, {self.args})"
 
 
 class ReceiveFuncAckMSG(MSG):
@@ -237,6 +267,9 @@ class ReceiveGetMSG(MSG):
         self.pid_caller = pid_caller
         self.pid = pid
 
+    def __str__(self) -> str:
+        return f"ReceiveGetMSG({self.pid_fid}, {self.pid_caller}, {self.pid})"
+
 
 class ReceiveGetAckMSG(MSG):
     """
@@ -253,3 +286,6 @@ class ReceiveGetAckMSG(MSG):
         self.pid = pid
         self.params = params
         self.params_grad = params_grad
+
+    def __str__(self) -> str:
+        return f"ReceiveGetAckMSG({self.fid}, {self.pid}, {self.params}, {self.params_grad})"

@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
         epochs = 10
         num_ensembles = 3
-        push.bayes.ensemble.train_deep_ensemble(
+        ensemble = push.bayes.ensemble.train_deep_ensemble(
             dataloader, # mk_dataloader,
             torch.nn.MSELoss(),
             epochs,
@@ -127,6 +127,10 @@ if __name__ == "__main__":
             num_devices=args.devices,
             num_ensembles=num_ensembles
         )
+        print("mean", ensemble.posterior_pred(dataloader, mode="mean"))
+        print("min", ensemble.posterior_pred(dataloader, mode="min"))
+        print("median", ensemble.posterior_pred(dataloader, mode="median"))
+        print("max", ensemble.posterior_pred(dataloader, mode="max"))
 
     elif args.method == "mswag":
         pretrain_epochs = 10

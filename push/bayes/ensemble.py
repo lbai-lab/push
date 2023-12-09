@@ -6,6 +6,7 @@ from typing import *
 
 from push.bayes.infer import Infer
 from push.particle import Particle
+from push.lib.utils import detach_to_cpu
 
 
 # =============================================================================
@@ -26,7 +27,7 @@ def mk_optim(params):
 
 
 # =============================================================================
-# Deep Ensemble
+# Deep Ensemble Training
 # =============================================================================
 
 def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int) -> None:
@@ -46,6 +47,47 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
 def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) -> None:
     particle.step(loss_fn, data, label, *args)
 
+
+# =============================================================================
+# Deep Ensemble Inference
+# =============================================================================
+
+def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = True, mode="mean") -> torch.Tensor:
+    acc = []
+    for data, label in dataloader:
+        acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
+    return torch.cat(acc)
+
+
+def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mode="mean") -> torch.Tensor:
+    other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
+    preds = []
+    preds += [detach_to_cpu(particle.forward(data).wait())]
+    for pid in other_particles:
+        preds += [particle.send(pid, "ENSEMBLE_PRED", data).wait()]
+    t_preds = torch.stack(preds, dim=1)
+    if f_reg:
+        if mode == "mean":
+            return t_preds.mean(dim=1)
+        elif mode == "median":
+            return t_preds.median(dim=1).values
+        elif mode == "min":
+            return t_preds.min(dim=1).values
+        elif mode == "max":
+            return t_preds.max(dim=1).values
+        else:
+            raise ValueError(f"Mode {mode} not supported ...")
+    else:
+        raise NotImplementedError()
+
+
+def _ensemble_pred(particle: Particle, data) -> None:
+    return detach_to_cpu(particle.forward(data).wait())
+
+
+# =============================================================================
+# Deep Ensemble
+# =============================================================================
 
 class Ensemble(Infer):
     """The Ensemble Class.
@@ -88,11 +130,14 @@ class Ensemble(Infer):
         # 1. Create particles
         pids = [
             self.push_dist.p_create(mk_optim, device=(0 % self.num_devices), receive={
-                "ENSEMBLE_MAIN": ensemble_entry
+                "ENSEMBLE_MAIN": ensemble_entry,
+                "LEADER_PRED_DL": _leader_pred_dl,
+                "LEADER_PRED": _leader_pred,
             }, state=ensemble_state)]
         for n in range(1, num_ensembles):
             pids += [self.push_dist.p_create(mk_optim, device=(n % self.num_devices), receive={
                 "ENSEMBLE_STEP": _ensemble_step,
+                "ENSEMBLE_PRED": _ensemble_pred,
             }, state={})]
 
         # 2. Perform independent training
@@ -100,6 +145,14 @@ class Ensemble(Infer):
 
         if f_save:
             self.push_dist.save()
+
+    def posterior_pred(self, data: DataLoader, f_reg=True, mode="mean") -> torch.Tensor:
+        if isinstance(data, torch.Tensor):
+            return self.push_dist.p_wait([self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)])
+        elif isinstance(data, DataLoader):
+            return self.push_dist.p_wait([self.push_dist.p_launch(0, "LEADER_PRED_DL", data, f_reg, mode)])
+        else:
+            raise ValueError(f"Data of type {type(data)} not supported ...")
 
 
 # =============================================================================

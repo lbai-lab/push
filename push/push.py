@@ -144,7 +144,7 @@ class PusH(Waitable):
                     if isinstance(msg, Exception):
                         raise msg
                     elif isinstance(msg, ReceiveFuncAckPDMSG):
-                        self._results[msg.pid_fid[1]] = None
+                        self._results[msg.pid_fid[1]] = msg.result
                     loop()
                     break
         return acc

@@ -7,7 +7,10 @@ from push.bayes.utils import flatten, unflatten_like
 from push.lib.utils import detach_to_cpu
 from tqdm import tqdm
 
+
+# =============================================================================
 # Helper functions
+# =============================================================================
 
 def mk_optim(params):
     """Returns an Adam optimizer.
@@ -21,7 +24,9 @@ def mk_optim(params):
     return torch.optim.Adam(params, lr=1e-5, weight_decay=1e-3)
 
 
+# =============================================================================
 # Swag Training
+# =============================================================================
 
 def _swag_step(particle: Particle,
                loss_fn: Callable,
@@ -117,7 +122,9 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
         print("Average epoch loss", torch.mean(torch.tensor(losses)))
 
 
+# =============================================================================
 # SWAG Inference
+# =============================================================================
 
 def _mswag_sample_entry(particle: Particle,
                         dataloader: DataLoader,
@@ -168,6 +175,7 @@ def _mswag_sample_entry(particle: Particle,
             classes2[y.item()][x.item()] += 1
 
     return classes, classes2
+
 
 def _mswag_sample(particle: Particle,
                   dataloader: DataLoader,
@@ -248,7 +256,6 @@ def _mswag_sample(particle: Particle,
     }
 
 
-
 def _mswag_sample_entry_regression(particle: Particle,
                                    dataloader: DataLoader,
                                    loss_fn: Callable,
@@ -281,7 +288,6 @@ def _mswag_sample_entry_regression(particle: Particle,
     mean_preds = torch.mean(torch.stack([my_ans['mean_preds']] + [ans[i-1]['mean_preds'] for i in range(1, num_models)]), dim=0)
 
     return mean_preds
-
 
 
 def _mswag_sample_regression(particle: Particle,

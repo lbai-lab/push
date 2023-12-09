@@ -160,7 +160,7 @@ if __name__ == "__main__":
             "D": D,
             "N": N,
         }
-        push.bayes.stein_vgd.train_svgd(
+        ensemble = push.bayes.stein_vgd.train_svgd(
             dataloader, torch.nn.MSELoss(),
             args.epochs, args.particles,
             BiggerNN, L, D,
@@ -169,6 +169,10 @@ if __name__ == "__main__":
             svgd_entry=push.bayes.stein_vgd._svgd_leader, svgd_state=svgd_state
         )
         print("Time elapsed", time.perf_counter() - start)
+        print("mean", ensemble.posterior_pred(dataloader, mode="mean"))
+        print("min", ensemble.posterior_pred(dataloader, mode="min"))
+        print("median", ensemble.posterior_pred(dataloader, mode="median"))
+        print("max", ensemble.posterior_pred(dataloader, mode="max"))
 
     else:
         raise ValueError(f"Method {args.method} not supported ...")

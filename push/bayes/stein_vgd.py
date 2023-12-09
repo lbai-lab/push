@@ -8,6 +8,7 @@ from typing import *
 from push.bayes.infer import Infer
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
+from push.bayes.ensemble import _leader_pred_dl, _leader_pred, _ensemble_pred
 
 
 # =============================================================================
@@ -302,16 +303,29 @@ class SteinVGD(Infer):
 
         """
         pid_leader = self.push_dist.p_create(mk_empty_optim, device=0, receive={
-            "SVGD_LEADER": svgd_entry
+            "SVGD_LEADER": svgd_entry,
+            "LEADER_PRED_DL": _leader_pred_dl,
+            "LEADER_PRED": _leader_pred,
         }, state=svgd_state)
         pids = [pid_leader]
         for p in range(num_particles - 1):
             pid = self.push_dist.p_create(mk_empty_optim, device=((p + 1) % self.num_devices), receive={
                 "SVGD_STEP": _svgd_step,
-                "SVGD_FOLLOW": _svgd_follow
+                "SVGD_FOLLOW": _svgd_follow,
+                "ENSEMBLE_PRED": _ensemble_pred,
             }, state=svgd_state)
             pids += [pid]
         self.push_dist.p_wait([self.push_dist.p_launch(0, "SVGD_LEADER", prior, loss_fn, lengthscale, lr, dataloader, epochs)])
+
+    def posterior_pred(self, data: DataLoader, f_reg=True, mode="mean") -> torch.Tensor:
+        if isinstance(data, torch.Tensor):
+            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)
+            return self.push_dist.p_wait([fut])[fut._fid]
+        elif isinstance(data, DataLoader):
+            fut = self.push_dist.p_launch(0, "LEADER_PRED_DL", data, f_reg, mode)
+            return self.push_dist.p_wait([fut])[fut._fid]
+        else:
+            raise ValueError(f"Data of type {type(data)} not supported ...")
 
 
 # =============================================================================
@@ -351,9 +365,9 @@ def train_svgd(dataloader: DataLoader, loss_fn: Callable, epochs: int, num_parti
     Note:
         The returned parameters can be used for further inference, testing, and analysis.
     """
-    with SteinVGD(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size) as stein_vgd:
-        stein_vgd.bayes_infer(dataloader, epochs,
-                              prior=prior, loss_fn=loss_fn,
-                              num_particles=num_particles, lengthscale=lengthscale, lr=lr,
-                              svgd_entry=svgd_entry, svgd_state=svgd_state)
-        return stein_vgd.p_parameters()
+    stein_vgd = SteinVGD(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
+    stein_vgd.bayes_infer(dataloader, epochs,
+                          prior=prior, loss_fn=loss_fn,
+                          num_particles=num_particles, lengthscale=lengthscale, lr=lr,
+                          svgd_entry=svgd_entry, svgd_state=svgd_state)
+    return stein_vgd

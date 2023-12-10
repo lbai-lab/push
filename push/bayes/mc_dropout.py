@@ -1,11 +1,13 @@
-from typing import Callable
 import torch
+
+from typing import Callable
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import *
 from push.bayes.infer import Infer
 from push.particle import Particle
 from dropout_util import FixableDropout, patch_dropout
+from push.lib.utils import detach_to_cpu
 
 # =============================================================================
 # Helper
@@ -23,20 +25,52 @@ def mk_optim(params):
     return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
 
 # =============================================================================
-# MC Dropout Functions
+# MC Dropout Particle Functions
 # =============================================================================
 
-def _multimc_main(particle: Particle):
-    pass
-
-def _leader_pred_dl(particle: Particle):
-    pass
-
-def _leader_pred(particle: Particle):
-    pass
+def _multimc_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int) -> None:
+    # Training loop
+    for e in tqdm(range(epochs)):
+        losses = []
+        for data, label in dataloader:
+            loss = particle.step(loss_fn, data, label).wait()
+            losses += [loss]
+            for pid in particle.other_particles():
+                particle.send(pid, "MULTIMC_STEP", loss_fn, data, label)
 
 def _multimc_step(particle: Particle):
-    pass
+    particle.step()
+    
+# =============================================================================
+# MC Dropout Inference
+# =============================================================================
+
+def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = True, mode="mean") -> torch.Tensor:
+    acc = []
+    for data, label in dataloader:
+        acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
+    return torch.cat(acc)
+
+def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mode="mean") -> torch.Tensor:
+    preds = []
+    preds += [detach_to_cpu(particle.forward(data).wait())]
+    for pid in particle.other_particles():
+        preds += [particle.send(pid, "ENSEMBLE_PRED", data).wait()]
+    t_preds = torch.stack(preds, dim=1)
+    if f_reg:
+        if mode == "mean":
+            return t_preds.mean(dim=1)
+        elif mode == "median":
+            return t_preds.median(dim=1).values
+        elif mode == "min":
+            return t_preds.min(dim=1).values
+        elif mode == "max":
+            return t_preds.max(dim=1).values
+        else:
+            raise ValueError(f"Mode {mode} not supported ...")
+    else:
+        cls = t_preds.softmax(dim=1).argmax(dim=1)
+        return torch.mode(cls, dim=1)
 
 def _multimc_pred(particle: Particle):
     pass

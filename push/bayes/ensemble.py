@@ -31,6 +31,23 @@ def mk_optim(params):
 # =============================================================================
 
 def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int) -> None:
+    """
+    Main training loop for the lead particle in a deep ensemble.
+
+    Args:
+        particle (Particle): The lead particle to be trained in the deep ensemble.
+        dataloader (DataLoader): The DataLoader containing training data.
+        loss_fn (Callable): The loss function used for training.
+        epochs (int): The number of training epochs.
+
+    Returns:
+        None
+
+    Note:
+        This function iteratively trains the lead particle for the specified number of epochs using the provided
+        DataLoader and loss function. The lead particle also communicates with other particles in the ensemble during training,
+        instructing them to step through the batch and training loop in a coordinated manner.
+    """
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     # Training loop
     for e in tqdm(range(epochs)):
@@ -45,6 +62,24 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
 
 
 def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) -> None:
+    """
+    Perform a single step of ensemble training for a particle.
+
+    Args:
+        particle (Particle): The particle to perform the ensemble step.
+        loss_fn (Callable): The loss function used for training.
+        data: The input data for training.
+        label: The labels corresponding to the input data.
+        *args: Additional arguments for the ensemble step.
+
+    Returns:
+        None
+
+    Note:
+        This function performs a single step of ensemble training for the specified particle. It calls the
+        particle's step method with the provided loss function, input data, and labels. Additional arguments
+        can be passed for customization during training.
+    """
     particle.step(loss_fn, data, label, *args)
 
 
@@ -53,6 +88,27 @@ def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) ->
 # =============================================================================
 
 def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = True, mode="mean") -> torch.Tensor:
+    """
+    Generate predictions using the lead particle in a deep ensemble for a DataLoader.
+
+    Args:
+        particle (Particle): The lead particle used for generating predictions.
+        dataloader (DataLoader): The DataLoader containing input data for which predictions are to be generated.
+        f_reg (bool, optional): Flag indicating whether this is a regression task. Set to false for classification tasks.
+            Defaults to True. If set to True, the task is treated as a regression task; otherwise, it is treated as a classification task.
+        mode (str, optional): The mode for generating predictions.
+            Options include "mean" for mean predictions, "median" for median predictions,
+            "min" for minimum predictions, and "max" for maximum predictions.
+            Defaults to "mean".
+
+    Returns:
+        torch.Tensor: The ensemble predictions for the input data in the DataLoader.
+
+    Note:
+        This function generates predictions using the lead particle in a deep ensemble for each batch in the DataLoader.
+        It internally calls the `_leader_pred` function to obtain predictions for each batch, and then concatenates
+        the results into a single tensor. The `f_reg` flag determines whether the task is treated as a regression or classification task.
+    """
     acc = []
     for data, label in dataloader:
         acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
@@ -60,6 +116,28 @@ def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = Tr
 
 
 def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mode="mean") -> torch.Tensor:
+    """
+    Generate predictions using the lead particle in a deep ensemble.
+
+    Args:
+        particle (Particle): The lead particle used for generating predictions.
+        data (torch.Tensor): The input data for which predictions are to be generated.
+        f_reg (bool, optional): Flag indicating whether this is a regression task. Set to false for classification tasks.
+        mode (str, optional): The mode for generating predictions.
+            Options include "mean" for mean predictions, "median" for median predictions,
+            "min" for minimum predictions, and "max" for maximum predictions.
+            Defaults to "mean".
+
+    Returns:
+        torch.Tensor: The ensemble predictions for the input data.
+
+    Raises:
+        ValueError: If the specified mode is not supported.
+
+    Note:
+        This function generates predictions using the lead particle in a deep ensemble. It communicates with
+        other particles in the ensemble to collect predictions, and then combines them based on the specified mode.
+    """
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     preds = []
     preds += [detach_to_cpu(particle.forward(data).wait())]
@@ -83,6 +161,21 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
 
 
 def _ensemble_pred(particle: Particle, data) -> None:
+    """
+    Generate ensemble predictions using the specified particle.
+
+    Args:
+        particle (Particle): The particle used for generating ensemble predictions.
+        data: The input data for which predictions are to be generated.
+
+    Returns:
+        None
+
+    Note:
+        This function performs ensemble predictions using the provided particle. It calls the particle's forward
+        method to generate predictions for the given input data. The predictions are then detached and transferred
+        to the CPU for further processing.
+    """
     return detach_to_cpu(particle.forward(data).wait())
 
 
@@ -148,6 +241,28 @@ class Ensemble(Infer):
             self.push_dist.save()
 
     def posterior_pred(self, data: DataLoader, f_reg=True, mode="mean") -> torch.Tensor:
+        """
+        Generate posterior predictions for the given data.
+
+        Args:
+            data (Union[torch.Tensor, DataLoader]): The input data for which predictions are to be generated.
+                If a torch.Tensor is provided, it is treated as a single input instance.
+                If a DataLoader is provided, predictions are generated for all instances in the DataLoader.
+            f_reg (bool, optional): Flag indicating whether this is a regression task. Set to false for classification tasks.
+            mode (str, optional): The mode for generating predictions. Options include "mean" for mean predictions, "median"
+                for median predictions, "max" for max predictions, and "min" for min predictions.
+                Defaults to "mean".
+
+        Returns:
+            torch.Tensor: The posterior predictions for the input data.
+
+        Raises:
+            ValueError: If the provided data is not of type torch.Tensor or DataLoader.
+
+        Note:
+            This function uses the push_dist module to launch distributed predictions asynchronously.
+            The type of predictions depends on the specified mode.
+        """
         if isinstance(data, torch.Tensor):
             fut = self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)
             return self.push_dist.p_wait([fut])[fut._fid]

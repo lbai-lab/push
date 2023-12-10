@@ -84,9 +84,7 @@ class MultiMCDropout(Infer):
     
     """
     def __init__(self, mk_nn: Callable[..., Any], *args: any, patch=True, num_devices=1, cache_size=4, view_size=4) -> None:
-        def mk_module(*args):
-            if patch:
-                return patch_dropout(mk_nn(*args))
+        
         super(MultiMCDropout, self).__init__(mk_module, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
 
     def bayes_infer(self,
@@ -126,3 +124,18 @@ class MultiMCDropout(Infer):
             pass
         else:
             raise ValueError(f"Data of type {type(data)} not supported ...")
+
+# =============================================================================
+# MC Dropout Training
+# =============================================================================
+
+def train_mc_dropout(dataloader: Callable, loss_fn: Callable, epochs: int,
+                        nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
+                        size_ensemble: int = 2, mk_optim = mk_optim,
+                        mc_entry = _multimc_main, patch=False) -> List[torch.Tensor]:
+    """Train a MC Dropout ensemble.
+    
+    """
+    mc_dropout = MultiMCDropout(nn, *args, patch=patch, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
+    mc_dropout.bayes_infer(dataloader, epochs, loss_fn, size_ensemble, mk_optim)
+    return mc_dropout

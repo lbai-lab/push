@@ -188,4 +188,4 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
     ensemble = Ensemble(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, num_ensembles=num_ensembles, mk_optim=mk_optim,
                          ensemble_entry=ensemble_entry, ensemble_state=ensemble_state)
-    return ensemble.p_parameters()
+    return ensemble

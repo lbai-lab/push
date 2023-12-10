@@ -6,10 +6,8 @@ from typing import *
 from push.lib.node_event_loop import NodeEventLoop
 from push.lib.messages import *
 from push.lib.waitable import Waitable
-
 from push.pfuture import PFuture
-import os
-
+from push.pqueue import SinglePQueue, MultiPQueue
     
 
 def init_node_event_loop(mk_module: Callable,
@@ -36,12 +34,14 @@ class PusH(Waitable):
         self.mk_module = mk_module
         self.args = args
 
-        # Process management
-        try:
-            mp.set_start_method("spawn")
-        except:
-            pass
-        self._manager = mp.Manager()
+        self.multi = False
+        if self.multi:
+            # Process management
+            try:
+                mp.set_start_method("spawn")
+            except:
+                pass
+            self._manager = mp.Manager()
         
         # Message queues for device event loops
         self._in_queues = {}             # device -> queue
@@ -68,24 +68,34 @@ class PusH(Waitable):
         for device_id in range(torch.cuda.device_count()):
             devices += [device_id]
         
-        self._in_queues[self.rank] = self._manager.Queue()
-        self._out_queues[self.rank] = self._manager.Queue()
+        if self.multi:
+            self._in_queues[self.rank] = MultiPQueue(self._manager)
+            self._out_queues[self.rank] = MultiPQueue(self._manager)
+        else:
+            self._in_queues[self.rank] = SinglePQueue()
+            self._out_queues[self.rank] = SinglePQueue()
 
-        # Start device event loops
-        p = mp.Process(
-            target=init_node_event_loop,
-            args=(
-                self.mk_module,
-                self.args,
-                self._in_queues,
-                self._out_queues,
-                self.rank,
-                devices,
-                self.cache_size,
-                self.view_size,
-            ))
-        self._processes[self.rank] = p
-        p.start()
+        if self.multi:
+            # Start device event loops
+            p = mp.Process(
+                target=init_node_event_loop,
+                args=(
+                    self.mk_module,
+                    self.args,
+                    self._in_queues,
+                    self._out_queues,
+                    self.rank,
+                    devices,
+                    self.cache_size,
+                    self.view_size,
+                ))
+            self._processes[self.rank] = p
+            p.start()
+        else:
+            self.nel = NodeEventLoop(self.mk_module, self.args, self._in_queues[self.rank], self._out_queues[self.rank], self.rank, devices, self.cache_size, self.view_size)
+            self._in_queues[self.rank]._nel = self.nel
+            self._out_queues[self.rank]._nel = self.nel
+            self._out_queues[self.rank].put(NodeEvtLoopInitMSG())
 
         # Acknowledge that device event loops have been started
         msg = self._out_queues[self.rank].get()
@@ -100,10 +110,11 @@ class PusH(Waitable):
         return self
 
     def _cleanup(self) -> None:
-        for device_id, proc in self._processes.items():
-            self._in_queues[device_id].put(NodeEvtLoopCleanupMSG())
-        for device_id, proc in self._processes.items():
-            proc.join()
+        if self.multi:
+            for device_id, proc in self._processes.items():
+                self._in_queues[device_id].put(NodeEvtLoopCleanupMSG())
+            for device_id, proc in self._processes.items():
+                proc.join()
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._cleanup()

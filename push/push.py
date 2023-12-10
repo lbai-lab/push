@@ -29,12 +29,12 @@ class PusH(Waitable):
     1. Create a Push Distribution which approximates a distribution on nn's parameters via *particles*.
     2. Create arbitrary number of particles (pinit). Particles execute concurrently of other particles
     """    
-    def __init__(self, mk_module: Callable, *args, cache_size=4, view_size=4) -> None:
+    def __init__(self, mk_module: Callable, *args, cache_size=4, view_size=4, multi=False) -> None:
         # Model
         self.mk_module = mk_module
         self.args = args
 
-        self.multi = False
+        self.multi = multi
         if self.multi:
             # Process management
             try:

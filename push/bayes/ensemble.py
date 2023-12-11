@@ -57,8 +57,8 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
             losses += [loss]
             for pid in other_particles:
                 particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
-        # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
-    # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
+        print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
+    print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
 
 
 def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) -> None:
@@ -156,8 +156,14 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         else:
             raise ValueError(f"Mode {mode} not supported ...")
     else:
-        cls = t_preds.softmax(dim=1).argmax(dim=1)
-        return torch.mode(cls, dim=1)
+        # Apply softmax along dimension 2
+        t_preds_softmax = t_preds.softmax(dim=2)
+
+        # Get the predicted class indices
+        cls = t_preds_softmax.argmax(dim=2)
+
+        # Use the mode operation to get the most frequent class index
+        return torch.mode(cls, dim=1).values
 
 
 def _ensemble_pred(particle: Particle, data) -> None:

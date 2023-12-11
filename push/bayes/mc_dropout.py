@@ -58,7 +58,9 @@ class MultiMCDropout(Infer):
     
     """
     def __init__(self, mk_nn: Callable[..., Any], *args: any, patch=True, num_devices=1, cache_size=4, view_size=4) -> None:
-        
+        def mk_module(*args):
+            if patch:
+                return patch_dropout(mk_nn(*args))
         super(MultiMCDropout, self).__init__(mk_module, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
 
     def bayes_infer(self,

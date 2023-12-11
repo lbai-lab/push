@@ -6,13 +6,20 @@ from tqdm import tqdm
 from typing import *
 from push.bayes.infer import Infer
 from push.particle import Particle
-from dropout_util import FixableDropout, patch_dropout
+from .dropout_util import FixableDropout, patch_dropout
 from push.lib.utils import detach_to_cpu
 from push.bayes.ensemble import _leader_pred_dl, _leader_pred
 
 # =============================================================================
 # Helper
 # =============================================================================
+_MC_DROPOUT_PATCH = True # required for pickle
+
+def mk_module(mk_nn: Callable[..., Any], *args: any) -> Callable:
+    if _MC_DROPOUT_PATCH:
+        return mk_nn(*args).apply(patch_dropout)
+    else:
+        return mk_nn(*args)
 
 def mk_optim(params):
     """Returns Adam optimizer.
@@ -46,8 +53,17 @@ def _multimc_step(particle: Particle):
 # MC Dropout Inference
 # =============================================================================
 
-def _multimc_pred(particle: Particle):
-    pass
+def _multimc_pred(particle: Particle, data):
+    # Set FixableDropout to eval mode
+    particle.module.eval()
+
+    # Set normal (unpatched) dropout layers to train mode
+    for module in particle.modules():
+        if module.__class__.__name__.startswith('Dropout'):
+            module.train()
+    
+    return detach_to_cpu(particle.forward(data).wait())
+    
 
 # =============================================================================
 # Multi MC Dropout
@@ -58,10 +74,9 @@ class MultiMCDropout(Infer):
     
     """
     def __init__(self, mk_nn: Callable[..., Any], *args: any, patch=True, num_devices=1, cache_size=4, view_size=4) -> None:
-        def mk_module(*args):
-            if patch:
-                return patch_dropout(mk_nn(*args))
+        PATCH = patch
         super(MultiMCDropout, self).__init__(mk_module, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
+
 
     def bayes_infer(self,
                     dataloader: DataLoader, 

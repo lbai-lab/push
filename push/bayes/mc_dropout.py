@@ -44,8 +44,9 @@ def _multimc_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable,
             for pid in particle.other_particles():
                 particle.send(pid, "MULTIMC_STEP", loss_fn, data, label)
 
-def _multimc_step(particle: Particle):
-    particle.step()
+def _multimc_step(particle: Particle, loss_fn: Callable, data, label, *args):
+    particle.module.train()
+    particle.step(loss_fn, data, label, *args)
     
 # =============================================================================
 # MC Dropout Inference

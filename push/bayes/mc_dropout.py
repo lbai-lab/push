@@ -13,10 +13,8 @@ from push.bayes.ensemble import _leader_pred_dl, _leader_pred
 # =============================================================================
 # Helper
 # =============================================================================
-_MC_DROPOUT_PATCH = True # required for pickle
-
-def mk_module(mk_nn: Callable[..., Any], *args: any) -> Callable:
-    if _MC_DROPOUT_PATCH:
+def mk_module(mk_nn: Callable[..., Any], patch, *args: any) -> Callable:
+    if patch:
         return mk_nn(*args).apply(patch_dropout)
     else:
         return mk_nn(*args)
@@ -74,8 +72,7 @@ class MultiMCDropout(Infer):
     
     """
     def __init__(self, mk_nn: Callable[..., Any], *args: any, patch=True, num_devices=1, cache_size=4, view_size=4) -> None:
-        PATCH = patch
-        super(MultiMCDropout, self).__init__(mk_module, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
+        super(MultiMCDropout, self).__init__(mk_module, *(mk_nn, patch, *args), num_devices=num_devices, cache_size=cache_size, view_size=view_size)
 
 
     def bayes_infer(self,

@@ -157,21 +157,13 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         else:
             raise ValueError(f"Mode {mode} not supported ...")
     else:
-        # Apply softmax along dimension 2
         t_preds_softmax = t_preds.softmax(dim=2)
-
         if mode == "logits":
             return t_preds
-
         if mode == "mean_prob":
-            # Get the mean probilities
             return torch.mean(t_preds_softmax, dim=1)
-
         if mode == "mode":
-            # Get the predicted class indices
             cls = t_preds_softmax.argmax(dim=2)
-
-            # Use the mode operation to get the most frequent class index
             return torch.mode(cls, dim=1).values
 
 

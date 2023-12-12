@@ -69,7 +69,7 @@ def freeze_dropout(particle: Particle):
     particle.module.eval()
 
     # Set normal (unpatched) dropout layers to train mode
-    for module in particle.modules():
+    for module in particle.module.modules():
         if module.__class__.__name__.startswith('Dropout'):
             module.train()
 
@@ -82,6 +82,8 @@ def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg=True, mode
 def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=10, freeze_on_eval=True):
     if freeze_on_eval:
         freeze_dropout(particle)
+    else:
+        particle.module.train()
     preds = []
     preds += [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
     for pid in particle.other_particles():
@@ -105,6 +107,8 @@ def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=
 def _multimc_pred(particle: Particle, data: torch.Tensor, num_samples: int = 10, freeze_on_eval: bool = True):
     if freeze_on_eval:
         freeze_dropout(particle)
+    else:
+        particle.module.train()
     
     return [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
 
@@ -156,12 +160,12 @@ class MultiMCDropout(Infer):
         if f_save:
             self.push_dist.save()
 
-    def posterior_pred(self, data: DataLoader | torch.Tensor, f_reg=True, mode="mean") -> torch.Tensor:
+    def posterior_pred(self, data: DataLoader | torch.Tensor, f_reg=True, mode="mean", num_samples=10, freeze_on_eval=False) -> torch.Tensor:
         if isinstance(data, torch.Tensor):
-            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)
+            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode, num_samples, freeze_on_eval)
             return self.push_dist.p_wait([fut])[fut._fid]
         elif isinstance(data, DataLoader):
-            fut = self.push_dist.p_launch(0, "LEADER_PRED_DL", data, f_reg, mode)
+            fut = self.push_dist.p_launch(0, "LEADER_PRED_DL", data, f_reg, mode, num_samples, freeze_on_eval)
             return self.push_dist.p_wait([fut])[fut._fid]
         else:
             raise ValueError(f"Data of type {type(data)} not supported ...")
@@ -190,6 +194,7 @@ class MultiMCDropout(Infer):
         mc_dropout = MultiMCDropout(nn, *args, patch=patch, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         mc_dropout.bayes_infer(dataloader, epochs, loss_fn, size_ensemble, mk_optim)
         return mc_dropout
+
 # =============================================================================
 # MC Dropout Training
 # =============================================================================

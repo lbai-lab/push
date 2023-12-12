@@ -112,7 +112,6 @@ def _multimc_pred(particle: Particle, data: torch.Tensor, num_samples: int = 10,
     
     return [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
 
-
 # =============================================================================
 # Multi MC Dropout
 # =============================================================================
@@ -175,7 +174,7 @@ class MultiMCDropout(Infer):
                         nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
                         size_ensemble: int = 2, mk_optim = mk_optim,
                         mc_entry = _multimc_main, patch=False) -> List[torch.Tensor]:
-        """Train a MC Dropout ensemble.
+        """Creates and trains a MC Dropout ensemble.
         
         Args:
             dataloader (Callable): Dataloader.

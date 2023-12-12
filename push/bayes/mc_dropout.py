@@ -16,7 +16,7 @@ from push.lib.utils import detach_to_cpu
 def mk_module(mk_nn: Callable[..., Any], patch, *args: any) -> nn.Module:
     """Wrapper for mk_nn that patches dropout if set.
 
-    NOT meant to be used outside of MultiMCDropout. Passes
+    NOT meant to be used outside of MultiMCDropout.
 
     Args:
         mk_nn (Callable): Function that returns a nn.Module.
@@ -64,7 +64,7 @@ def _multimc_step(particle: Particle, loss_fn: Callable, data, label, *args):
 # MC Dropout Inference
 # =============================================================================
 
-def _multimc_pred(particle: Particle, data, num_samples=10):
+def freeze_dropout(particle: Particle):
     # Set FixableDropout to eval mode
     particle.module.eval()
 
@@ -72,9 +72,42 @@ def _multimc_pred(particle: Particle, data, num_samples=10):
     for module in particle.modules():
         if module.__class__.__name__.startswith('Dropout'):
             module.train()
+
+def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg=True, mode="mean", num_samples=10, freeze_on_eval=True) -> torch.Tensor:
+    acc = []
+    for data, label in dataloader:
+        acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
+    return torch.cat(acc)
+
+def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=10, freeze_on_eval=True):
+    if freeze_on_eval:
+        freeze_dropout(particle)
+    preds = []
+    preds += [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
+    for pid in particle.other_particles():
+        preds += particle.send(pid, "MULTIMC_PRED", data, num_samples).wait()
+    t_preds = torch.stack(preds, dim=1)
+    if f_reg:
+        if mode == "mean":
+            return t_preds.mean(dim=1)
+        elif mode == "median":
+            return t_preds.median(dim=1).values
+        elif mode == "min":
+            return t_preds.min(dim=1).values
+        elif mode == "max":
+            return t_preds.max(dim=1).values
+        else:
+            raise ValueError(f"Mode {mode} not supported ...")
+    else:
+        cls = t_preds.softmax(dim=1).argmax(dim=1)
+        return torch.mode(cls, dim=1)
+
+def _multimc_pred(particle: Particle, data: torch.Tensor, num_samples: int = 10, freeze_on_eval: bool = True):
+    if freeze_on_eval:
+        freeze_dropout(particle)
     
-    return detach_to_cpu(particle.forward(data).wait())
-    
+    return [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
+
 
 # =============================================================================
 # Multi MC Dropout

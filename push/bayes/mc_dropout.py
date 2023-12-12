@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 from typing import Callable
 from torch.utils.data import DataLoader
@@ -8,12 +9,23 @@ from push.bayes.infer import Infer
 from push.particle import Particle
 from .dropout_util import FixableDropout, patch_dropout
 from push.lib.utils import detach_to_cpu
-from push.bayes.ensemble import _leader_pred_dl, _leader_pred
 
 # =============================================================================
 # Helper
 # =============================================================================
-def mk_module(mk_nn: Callable[..., Any], patch, *args: any) -> Callable:
+def mk_module(mk_nn: Callable[..., Any], patch, *args: any) -> nn.Module:
+    """Wrapper for mk_nn that patches dropout if set.
+
+    NOT meant to be used outside of MultiMCDropout. Passes
+
+    Args:
+        mk_nn (Callable): Function that returns a nn.Module.
+        patch (bool): Whether to patch dropout layers.
+        *args (list): Arguments for mk_nn.
+    
+    Returns:
+        nn.Module: Patched nn.Module.
+    """
     if patch:
         return mk_nn(*args).apply(patch_dropout)
     else:
@@ -52,7 +64,7 @@ def _multimc_step(particle: Particle, loss_fn: Callable, data, label, *args):
 # MC Dropout Inference
 # =============================================================================
 
-def _multimc_pred(particle: Particle, data):
+def _multimc_pred(particle: Particle, data, num_samples=10):
     # Set FixableDropout to eval mode
     particle.module.eval()
 
@@ -68,9 +80,12 @@ def _multimc_pred(particle: Particle, data):
 # Multi MC Dropout
 # =============================================================================
 class MultiMCDropout(Infer):
-    """Multi MC Dropout inference
-    
-    
+    """Multi MC Dropout Class.
+
+    5hether to patch dropout layers.
+        num_devices (int): Number of devices to use.
+        cache_size (int): Size of cache.
+        view_size (int): Size of view.
     """
     def __init__(self, mk_nn: Callable[..., Any], *args: any, patch=True, num_devices=1, cache_size=4, view_size=4) -> None:
         super(MultiMCDropout, self).__init__(mk_module, *(mk_nn, patch, *args), num_devices=num_devices, cache_size=cache_size, view_size=view_size)
@@ -114,17 +129,37 @@ class MultiMCDropout(Infer):
         else:
             raise ValueError(f"Data of type {type(data)} not supported ...")
 
+    @staticmethod
+    def train_mc_dropout(dataloader: Callable, loss_fn: Callable, epochs: int,
+                        nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
+                        size_ensemble: int = 2, mk_optim = mk_optim,
+                        mc_entry = _multimc_main, patch=False) -> List[torch.Tensor]:
+        """Train a MC Dropout ensemble.
+        
+        Args:
+            dataloader (Callable): Dataloader.
+            loss_fn (Callable): Loss function to be used during training.
+            epochs (int): Number of epochs to train for.
+            nn (Callable): Function that returns a nn.Module.
+            *args (list): Arguments for nn.
+            num_devices (int, optional): Number of devices to use.
+            cache_size (int, optional): Size of cache.
+            view_size (int, optional): Size of view.
+            size_ensemble (int, optional): Number of models to be ensembled.
+            mk_optim (Callable): Returns an optimizer.
+            mc_entry (function, optional): Training loop for MC Dropout.
+            patch (bool, optional): Whether to patch dropout layers.
+        """
+        mc_dropout = MultiMCDropout(nn, *args, patch=patch, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
+        mc_dropout.bayes_infer(dataloader, epochs, loss_fn, size_ensemble, mk_optim)
+        return mc_dropout
 # =============================================================================
 # MC Dropout Training
 # =============================================================================
 
-def train_mc_dropout(dataloader: Callable, loss_fn: Callable, epochs: int,
-                        nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
-                        size_ensemble: int = 2, mk_optim = mk_optim,
-                        mc_entry = _multimc_main, patch=False) -> List[torch.Tensor]:
+def train_mc_dropout(*args, **kwargs):
     """Train a MC Dropout ensemble.
     
+    Wraps MultiMCDropout.train_mc_dropout.
     """
-    mc_dropout = MultiMCDropout(nn, *args, patch=patch, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
-    mc_dropout.bayes_infer(dataloader, epochs, loss_fn, size_ensemble, mk_optim)
-    return mc_dropout
+    return MultiMCDropout.train_mc_dropout(*args, **kwargs)

@@ -119,7 +119,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
         futs = [particle.send(pid, "SWAG_SWAG", False) for pid in other_pids]
         _swag_swag(particle, False)
         [f.wait() for f in futs]
-        print("Average epoch loss", torch.mean(torch.tensor(losses)))
+        # print("Average epoch loss", torch.mean(torch.tensor(losses)))
 
 
 # =============================================================================
@@ -129,7 +129,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
 def _leader_pred(particle: Particle,
                         dataloader: DataLoader, scale: float,
                         var_clamp: float, num_samples: int,
-                        mode, num_models: int) -> torch.Tensor:
+                        mode: str, num_models: int, f_reg: bool = True) -> torch.Tensor:
     """Generate MSWAG predictions using the lead particle in a MSWAG PusH distribution.
 
     Args:
@@ -151,33 +151,30 @@ def _leader_pred(particle: Particle,
 
     for pid in other_particles:
         preds += [particle.send(pid, "SWAG_PRED", dataloader, scale, var_clamp, num_samples).wait()]
-
-    preds_softmax = [
-        [entry.softmax(dim=1) for entry in tensor_list]
-        for tensor_list in preds
-    ]
-
-    concatenated_preds = [
-        torch.cat(tensor_list, dim=0)
-        for tensor_list in preds_softmax
-    ]
-
-    if mode == "mode":
-        # Get the predicted class indices
-        cls = [tensor_list.argmax(dim=1) for tensor_list in concatenated_preds]
-        stacked_cls = torch.stack(cls)
-        return torch.mode(stacked_cls, dim=0).values
-
-    if mode == "mean":
-        stacked_preds = torch.stack(concatenated_preds)
-        mean_values = torch.mean(stacked_preds, dim=0)
-        return mean_values.argmax(dim=1)
-
-    if mode == "median":
-        stacked_preds = torch.stack(concatenated_preds)
-        median_values = torch.median(stacked_preds, dim=0).values
-        return median_values.argmax(dim=1)
-
+    t_preds = [torch.cat(tensor_list, dim=0)for tensor_list in preds]
+    if f_reg:
+        stacked_preds = torch.stack(t_preds, dim=0)
+        if mode == "min":
+            return torch.min(stacked_preds, dim=0).values
+        if mode == "max":
+            return torch.max(stacked_preds, dim=0).values
+        if mode == "mean":
+            return torch.mean(stacked_preds, dim=0)
+    else:
+        preds_softmax = [entry.softmax(dim=1) for entry in t_preds]
+        if mode == "mode":
+            # Get the predicted class indices
+            cls = [tensor_list.argmax(dim=1) for tensor_list in preds_softmax]
+            stacked_cls = torch.stack(cls)
+            return torch.mode(stacked_cls, dim=0).values
+        if mode == "mean":
+            stacked_preds = torch.stack(preds_softmax)
+            mean_values = torch.mean(stacked_preds, dim=0)
+            return mean_values.argmax(dim=1)
+        if mode == "median":
+            stacked_preds = torch.stack(preds_softmax)
+            median_values = torch.median(stacked_preds, dim=0).values
+            return median_values.argmax(dim=1)
 
 
 def _mswag_pred(particle: Particle,
@@ -258,7 +255,6 @@ def _mswag_sample_entry(particle: Particle,
         num_samples (int): Number of samples.
         num_models (int): Number of models.
     """
-    # TODO: Add comments explaining this function
     # Unpack state
     state = particle.state
     pid = particle.pid
@@ -566,7 +562,7 @@ class MultiSWAG(Infer):
             self.push_dist.save()
 
     def posterior_pred(self, data: DataLoader, loss_fn=torch.nn.MSELoss(),
-                       num_samples=20, scale=1.0, var_clamp=1e-30, mode="mode"):
+                       num_samples: int = 20, scale: float = 1.0, var_clamp: float = 1e-30, mode: str ="mode", f_reg: bool = True):
         """
         Generate posterior predictions using MultiSWAG.
 
@@ -586,7 +582,7 @@ class MultiSWAG(Infer):
         #     fut = self.push_dist.p_launch(0, "LEADER_PRED", data, scale, var_clamp, num_samples, mode, len(self.swag_pids))
         #     return self.push_dist.p_wait([fut])[fut._fid]
         if isinstance(data, DataLoader):
-            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, scale, var_clamp, num_samples, mode, len(self.swag_pids))
+            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, scale, var_clamp, num_samples, mode, len(self.swag_pids), f_reg)
             return self.push_dist.p_wait([fut])[fut._fid]
         else:
             raise ValueError(f"Data of type {type(data)} not supported ...")

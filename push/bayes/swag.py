@@ -124,7 +124,121 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
 
 # =============================================================================
 # SWAG Inference
-# =============================================================================
+# =============================================================================       
+
+def _leader_pred(particle: Particle,
+                        dataloader: DataLoader, scale: float,
+                        var_clamp: float, num_samples: int,
+                        mode, num_models: int) -> torch.Tensor:
+    """Generate MSWAG predictions using the lead particle in a MSWAG PusH distribution.
+
+    Args:
+        particle (Particle): The lead particle in the MSWAG ensemble.
+        dataloader (DataLoader): DataLoader for input data.
+        scale (float): Scaling factor for MSWAG sampling.
+        var_clamp (float): Clamping value for variance in MSWAG sampling.
+        num_samples (int): Number of SWAG samples.
+        mode (str): Ensemble prediction mode. Options: "mode", "mean".
+        num_models (int): Number of models in the ensemble.
+
+    Returns:
+        torch.Tensor: Ensemble predictions for the input data.
+    """
+    other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
+    preds = []
+     # Perform MSWAG sampling for the lead particle
+    preds += [_mswag_pred(particle, dataloader, var_clamp, scale, num_samples)]
+
+    for pid in other_particles:
+        preds += [particle.send(pid, "SWAG_PRED", dataloader, scale, var_clamp, num_samples).wait()]
+
+    preds_softmax = [
+        [entry.softmax(dim=1) for entry in tensor_list]
+        for tensor_list in preds
+    ]
+
+    concatenated_preds = [
+        torch.cat(tensor_list, dim=0)
+        for tensor_list in preds_softmax
+    ]
+
+    if mode == "mode":
+        # Get the predicted class indices
+        cls = [tensor_list.argmax(dim=1) for tensor_list in concatenated_preds]
+        stacked_cls = torch.stack(cls)
+        return torch.mode(stacked_cls, dim=0).values
+
+    if mode == "mean":
+        stacked_preds = torch.stack(concatenated_preds)
+        mean_values = torch.mean(stacked_preds, dim=0)
+        return mean_values.argmax(dim=1)
+
+    if mode == "median":
+        stacked_preds = torch.stack(concatenated_preds)
+        median_values = torch.median(stacked_preds, dim=0).values
+        return median_values.argmax(dim=1)
+
+
+
+def _mswag_pred(particle: Particle,
+                  dataloader: DataLoader,
+                  scale: float,
+                  var_clamp: float,
+                  num_samples: int) -> torch.Tensor:
+    """MSWAG sample prediction function.
+
+    Args:
+        particle (Particle): MSWAG particle.
+        dataloader (DataLoader): DataLoader.
+        scale (float): Scaling factor.
+        var_clamp (float): Variance clamping factor.
+        num_samples (int): Number of SWAG samples.
+
+    Returns:
+        torch.Tensor: Predictions for the input data.
+    """
+    pid = particle.pid
+    # Gather
+    mean_list = [param for param in particle.state[pid]["mom1"]]
+    sq_mean_list = [param for param in particle.state[pid]["mom2"]]
+
+    scale_sqrt = scale ** 0.5
+    mean = flatten(mean_list)
+    sq_mean = flatten(sq_mean_list)
+
+    # Compute and store prediction for each SWAG sample
+    # preds = {i: [] for i in range(num_samples)}
+    preds = []
+    for i in range(num_samples):
+        # Draw diagonal variance sample
+        var = torch.clamp(sq_mean - mean ** 2, var_clamp)
+        var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
+        rand_sample = var_sample
+
+        # Update sample with mean and scale
+        sample = mean + scale_sqrt * rand_sample
+        sample = sample.unsqueeze(0)
+
+        # Update
+        samples_list = unflatten_like(sample, mean_list)
+
+        for param, sample in zip(particle.module.parameters(), samples_list):
+            param.data = sample
+
+        # Forward pass and store predictions
+        pred = [detach_to_cpu(particle.forward(data).wait()) for data, _ in dataloader]
+        preds += [pred]
+
+    mean_preds = []
+    # Calculate mean predictions over num_samples
+    for n in range(len(preds[0])):
+        # Accumulate predictions for each sample
+        mean_preds_accum = sum(preds[i][n] for i in range(num_samples))
+        # Calculate mean for each data point
+        mean_preds.append(mean_preds_accum / num_samples)
+
+    return mean_preds
+
 
 def _mswag_sample_entry(particle: Particle,
                         dataloader: DataLoader,
@@ -430,12 +544,14 @@ class MultiSWAG(Infer):
                 param_pid = self.push_dist.p_create(mk_optim, device=(model_num % self.num_devices), receive={
                     "SWAG_PARTICLE": mswag_entry,
                     "SWAG_SAMPLE_ENTRY": mswag_sample_entry,
+                    "LEADER_PRED": _leader_pred,
                 }, state=mswag_state)
             else:
                 param_pid = self.push_dist.p_create(mk_optim, device=(model_num % self.num_devices), receive={
                     "SWAG_STEP": _swag_step,
                     "SWAG_SWAG": _swag_swag,
-                    "SWAG_SAMPLE": mswag_sample
+                    "SWAG_SAMPLE": mswag_sample,
+                    "SWAG_PRED": _mswag_pred
                 }, state=mswag_state)
             return param_pid
 
@@ -449,8 +565,8 @@ class MultiSWAG(Infer):
         if f_save:
             self.push_dist.save()
 
-    def posterior_pred(self, dataloader: DataLoader, loss_fn=torch.nn.MSELoss(),
-                       num_samples=20, scale=1.0, var_clamp=1e-30):
+    def posterior_pred(self, data: DataLoader, loss_fn=torch.nn.MSELoss(),
+                       num_samples=20, scale=1.0, var_clamp=1e-30, mode="mode"):
         """
         Generate posterior predictions using MultiSWAG.
 
@@ -465,25 +581,24 @@ class MultiSWAG(Infer):
             None
 
         """
-        self.push_dist.p_wait([self.push_dist.p_launch(0, "SWAG_SAMPLE_ENTRY", dataloader, loss_fn, scale, var_clamp, num_samples, len(self.swag_pids))])
 
+        # if isinstance(data, torch.Tensor):
+        #     fut = self.push_dist.p_launch(0, "LEADER_PRED", data, scale, var_clamp, num_samples, mode, len(self.swag_pids))
+        #     return self.push_dist.p_wait([fut])[fut._fid]
+        if isinstance(data, DataLoader):
+            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, scale, var_clamp, num_samples, mode, len(self.swag_pids))
+            return self.push_dist.p_wait([fut])[fut._fid]
+        else:
+            raise ValueError(f"Data of type {type(data)} not supported ...")
 
 # =============================================================================
 # Multi-Swag Training
 # =============================================================================
 
-def train_mswag(dataloader: DataLoader,
-                loss_fn: Callable,
-                pretrain_epochs: int,
-                swag_epochs: int,
-                num_models: int,
-                cache_size: int,
-                view_size:int,
-                nn: Callable, *args,
-                num_devices=1, lr=1e-3,
-                mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
-                mswag_sample_entry=_mswag_sample_entry,
-                mswag_sample=_mswag_sample):
+def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
+                swag_epochs: int, nn: Callable, *args, num_devices=1, cache_size: int = 4, view_size: int = 4,
+                num_models: int, lr=1e-3, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
+                mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
     """
     Train a MultiSWAG model.
 

@@ -141,6 +141,7 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     preds = []
     preds += [detach_to_cpu(particle.forward(data).wait())]
+    # print("leader pred: ", preds)
     for pid in other_particles:
         preds += [particle.send(pid, "ENSEMBLE_PRED", data).wait()]
     t_preds = torch.stack(preds, dim=1)
@@ -159,11 +160,19 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         # Apply softmax along dimension 2
         t_preds_softmax = t_preds.softmax(dim=2)
 
-        # Get the predicted class indices
-        cls = t_preds_softmax.argmax(dim=2)
+        if mode == "logits":
+            return t_preds
 
-        # Use the mode operation to get the most frequent class index
-        return torch.mode(cls, dim=1).values
+        if mode == "mean_prob":
+            # Get the mean probilities
+            return torch.mean(t_preds_softmax, dim=1)
+
+        if mode == "mode":
+            # Get the predicted class indices
+            cls = t_preds_softmax.argmax(dim=2)
+
+            # Use the mode operation to get the most frequent class index
+            return torch.mode(cls, dim=1).values
 
 
 def _ensemble_pred(particle: Particle, data) -> None:
@@ -239,7 +248,6 @@ class Ensemble(Infer):
                 "ENSEMBLE_STEP": _ensemble_step,
                 "ENSEMBLE_PRED": _ensemble_pred,
             }, state={})]
-
         # 2. Perform independent training
         self.push_dist.p_wait([self.push_dist.p_launch(0, "ENSEMBLE_MAIN", dataloader, loss_fn, epochs)])
 

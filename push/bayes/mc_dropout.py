@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 from typing import Callable
 from torch.utils.data import DataLoader
@@ -85,7 +86,7 @@ class MultiMCDropout(Infer):
         """Create PusH distribution and train it.
         
         """
-        # Create ensemble
+        # Create main particle
         pids = []
         pid_main = self.push_dist.p_create(mk_optim, device=0, receive={
             "MULTIMC_MAIN": _multimc_main,
@@ -93,8 +94,10 @@ class MultiMCDropout(Infer):
             "LEADER_PRED": _leader_pred,
         })
         pids.append(pid_main)
+
+        # Create worker particles
         for i in range(size_ensemble-1):
-            pids.append(self.push_dist.p_create(mk_optim, device=i+1, receive={
+            pids.append(self.push_dist.p_create(mk_optim, device=(i % self.num_devices), receive={
                 "MULTIMC_STEP": _multimc_step,
                 "MULTIMC_PRED": _multimc_pred,
             }))
@@ -108,9 +111,11 @@ class MultiMCDropout(Infer):
 
     def posterior_pred(self, data: DataLoader | torch.Tensor, f_reg=True, mode="mean") -> torch.Tensor:
         if isinstance(data, torch.Tensor):
-            pass
-        if isinstance(data, DataLoader):
-            pass
+            fut = self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)
+            return self.push_dist.p_wait([fut])[fut._fid]
+        elif isinstance(data, DataLoader):
+            fut = self.push_dist.p_launch(0, "LEADER_PRED_DL", data, f_reg, mode)
+            return self.push_dist.p_wait([fut])[fut._fid]
         else:
             raise ValueError(f"Data of type {type(data)} not supported ...")
 

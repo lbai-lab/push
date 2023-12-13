@@ -87,7 +87,7 @@ def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=
     preds = []
     preds += [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
     for pid in particle.other_particles():
-        preds += particle.send(pid, "MULTIMC_PRED", data, num_samples).wait()
+        preds += [particle.send(pid, "MULTIMC_PRED", data, num_samples).wait()]
     t_preds = torch.stack(preds, dim=1)
     if f_reg:
         if mode == "mean":

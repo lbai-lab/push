@@ -98,6 +98,8 @@ def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=
             return t_preds.min(dim=1).values
         elif mode == "max":
             return t_preds.max(dim=1).values
+        elif mode == "raw":
+            return t_preds
         else:
             raise ValueError(f"Mode {mode} not supported ...")
     else:

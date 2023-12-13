@@ -47,18 +47,23 @@ def mk_optim(params):
 # =============================================================================
 
 def _multimc_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int) -> None:
+    print_loop = max(int(epochs/10),1)
+    
     # Training loop
     for e in tqdm(range(epochs)):
-        losses = []
+        losses_futs = []
         for data, label in dataloader:
-            loss = particle.step(loss_fn, data, label).wait()
-            losses += [loss]
+            losses_futs += [particle.step(loss_fn, data, label)]
             for pid in particle.other_particles():
-                particle.send(pid, "MULTIMC_STEP", loss_fn, data, label)
+                losses_futs += [particle.send(pid, "MULTIMC_STEP", loss_fn, data, label)]
+        if e % print_loop == 0:
+            losses = [l.wait() for l in losses_futs]
+            average_loss = sum(losses)/len(losses)
+            print(f"Average loss after epoch {e}: {average_loss}")
 
 def _multimc_step(particle: Particle, loss_fn: Callable, data, label, *args):
     particle.module.train()
-    particle.step(loss_fn, data, label, *args)
+    return particle.step(loss_fn, data, label, *args).wait()
     
 # =============================================================================
 # MC Dropout Inference
@@ -85,9 +90,10 @@ def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=
     else:
         particle.module.train()
     preds = []
-    preds += [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
+    my_preds = [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
+    preds += torch.stack(my_preds, dim=0)
     for pid in particle.other_particles():
-        preds += [particle.send(pid, "MULTIMC_PRED", data, num_samples).wait()]
+        preds += particle.send(pid, "MULTIMC_PRED", data, num_samples).wait()
     t_preds = torch.stack(preds, dim=1)
     if f_reg:
         if mode == "mean":
@@ -111,8 +117,8 @@ def _multimc_pred(particle: Particle, data: torch.Tensor, num_samples: int = 10,
         freeze_dropout(particle)
     else:
         particle.module.train()
-    
-    return [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
+    preds = [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
+    return torch.stack(preds, dim=0)
 
 # =============================================================================
 # Multi MC Dropout

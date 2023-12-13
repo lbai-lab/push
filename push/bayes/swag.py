@@ -21,7 +21,7 @@ def mk_optim(params):
     Returns:
         torch.optim.Adam: Adam optimizer.
     """
-    return torch.optim.Adam(params, lr=1e-5, weight_decay=1e-3)
+    return torch.optim.Adam(params, lr=1e-3, weight_decay=1e-2)
 
 
 # =============================================================================
@@ -101,7 +101,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
             fut = particle.step(loss_fn, data, label)
             futs = [particle.send(pid, "SWAG_STEP", loss_fn, data, label) for pid in other_pids]
             losses += [fut.wait()]
-        print("Average epoch loss", torch.mean(torch.tensor(losses)))
+        # print("Average epoch loss", torch.mean(torch.tensor(losses)))
     
     # Initialize SWAG
     [particle.send(pid, "SWAG_SWAG", True) for pid in other_pids]
@@ -154,7 +154,7 @@ def _leader_pred(particle: Particle,
     t_preds = [torch.cat(tensor_list, dim=0)for tensor_list in preds]
     results_dict = {}
     if f_reg:
-        valid_modes = ["mean", "median", "min", "max"]
+        valid_modes = ["mean", "median", "min", "max", "std"]
         for mode_val in mode:
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         stacked_preds = torch.stack(t_preds, dim=0)
@@ -166,6 +166,8 @@ def _leader_pred(particle: Particle,
             results_dict["min"] = torch.min(stacked_preds, dim=0).values
         if "max" in mode:
             results_dict["max"] = torch.max(stacked_preds, dim=0).values
+        if "std" in mode:
+            results_dict["std"] = torch.std(stacked_preds, dim=0)
     else:
         valid_modes = ["mode", "mean", "median"]
         for mode_val in mode:
@@ -516,7 +518,7 @@ class MultiSWAG(Infer):
     def bayes_infer(self,
                     dataloader: DataLoader, 
                     loss_fn=torch.nn.MSELoss(),
-                    num_models=1, lr=1e-3, pretrain_epochs=10, swag_epochs=5,
+                    num_models=1, pretrain_epochs=10, swag_epochs=5,
                     mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                     mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
         """
@@ -602,7 +604,7 @@ class MultiSWAG(Infer):
 
 def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
                 swag_epochs: int, nn: Callable, *args, num_devices=1, cache_size: int = 4, view_size: int = 4,
-                num_models: int, lr=1e-3, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
+                num_models: int, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                 mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
     """
     Train a MultiSWAG model.
@@ -630,7 +632,7 @@ def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
 
     """
     mswag = MultiSWAG(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
-    mswag.bayes_infer(dataloader, loss_fn, num_models, lr=lr, pretrain_epochs=pretrain_epochs,
+    mswag.bayes_infer(dataloader, loss_fn, num_models, pretrain_epochs=pretrain_epochs,
                       swag_epochs=swag_epochs, mswag_entry=mswag_entry, mswag_state=mswag_state,
                       f_save=f_save, mswag_sample_entry=mswag_sample_entry, mswag_sample=mswag_sample)
     return mswag

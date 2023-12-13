@@ -57,7 +57,7 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
             losses += [loss]
             for pid in other_particles:
                 particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
-    #     print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
+        # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
     # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
 
 
@@ -149,9 +149,11 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
     t_preds = torch.stack(preds, dim=1)
     results_dict = {}
     if f_reg:
-        valid_modes = ["mean", "median", "min", "max"]
+        valid_modes = ["mean", "median", "min", "max", "std"]
         for mode_val in mode:
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
+        if "std" in mode:
+            results_dict["std"] = t_preds.std(dim=1)
         if "mean" in mode:
             results_dict["mean"] = t_preds.mean(dim=1)
         if "median" in mode:

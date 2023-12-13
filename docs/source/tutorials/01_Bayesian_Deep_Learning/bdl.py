@@ -40,6 +40,18 @@ class SineWithNoiseDataset(Dataset):
 # Architecture
 # =============================================================================
 
+class RegNet(nn.Sequential):
+    def __init__(self, dimensions, input_dim=1, output_dim=1, apply_var=True):
+        super(RegNet, self).__init__()
+        self.dimensions = [input_dim, dimensions, output_dim]        
+        for i in range(len(self.dimensions) - 1):
+            self.add_module('linear%d' % i, torch.nn.Linear(self.dimensions[i], self.dimensions[i + 1]))
+            if i < len(self.dimensions) - 2:
+                self.add_module('relu%d' % i, torch.nn.ReLU())
+
+        if output_dim == 2:
+            self.add_module('var_split', SplitDim(correction=apply_var))
+
 class BiggerNN(nn.Module):
     def __init__(self, n, input_dim, output_dim, hidden_dim):
         super(BiggerNN, self).__init__()

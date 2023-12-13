@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from typing import Callable, Any
+from typing import *
 import torch
 from push.bayes.infer import Infer
 from push.particle import Particle
@@ -129,7 +129,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
 def _leader_pred(particle: Particle,
                         dataloader: DataLoader, scale: float,
                         var_clamp: float, num_samples: int,
-                        mode: str, num_models: int, f_reg: bool = True) -> torch.Tensor:
+                        mode: List[str], num_models: int, f_reg: bool = True) -> torch.Tensor:
     """Generate MSWAG predictions using the lead particle in a MSWAG PusH distribution.
 
     Args:
@@ -152,29 +152,32 @@ def _leader_pred(particle: Particle,
     for pid in other_particles:
         preds += [particle.send(pid, "SWAG_PRED", dataloader, scale, var_clamp, num_samples).wait()]
     t_preds = [torch.cat(tensor_list, dim=0)for tensor_list in preds]
+    results_dict = {}
     if f_reg:
         stacked_preds = torch.stack(t_preds, dim=0)
-        if mode == "min":
-            return torch.min(stacked_preds, dim=0).values
-        if mode == "max":
-            return torch.max(stacked_preds, dim=0).values
-        if mode == "mean":
-            return torch.mean(stacked_preds, dim=0)
+        if "mean" in mode:
+            results_dict["mean"] = torch.mean(stacked_preds, dim=0)
+        if "median" in mode:
+            results_dict["median"] = torch.median(stacked_preds, dim=0).values
+        if "min" in mode:
+            results_dict["min"] = torch.min(stacked_preds, dim=0).values
+        if "max" in mode:
+            results_dict["max"] = torch.max(stacked_preds, dim=0).values
     else:
         preds_softmax = [entry.softmax(dim=1) for entry in t_preds]
-        if mode == "mode":
-            # Get the predicted class indices
+        if "mode" in mode:
             cls = [tensor_list.argmax(dim=1) for tensor_list in preds_softmax]
             stacked_cls = torch.stack(cls)
-            return torch.mode(stacked_cls, dim=0).values
-        if mode == "mean":
+            results_dict["mode"] = torch.mode(stacked_cls, dim=0).values
+        if "mean" in mode:
             stacked_preds = torch.stack(preds_softmax)
             mean_values = torch.mean(stacked_preds, dim=0)
-            return mean_values.argmax(dim=1)
-        if mode == "median":
+            results_dict["mean"] = mean_values.argmax(dim=1)
+        if "median" in mode:
             stacked_preds = torch.stack(preds_softmax)
             median_values = torch.median(stacked_preds, dim=0).values
-            return median_values.argmax(dim=1)
+            results_dict["median"] = median_values.argmax(dim=1)
+    return results_dict
 
 
 def _mswag_pred(particle: Particle,
@@ -562,7 +565,7 @@ class MultiSWAG(Infer):
             self.push_dist.save()
 
     def posterior_pred(self, data: DataLoader, loss_fn=torch.nn.MSELoss(),
-                       num_samples: int = 20, scale: float = 1.0, var_clamp: float = 1e-30, mode: str ="mode", f_reg: bool = True):
+                       num_samples: int = 20, scale: float = 1.0, var_clamp: float = 1e-30, mode: List[str] = ["mean"], f_reg: bool = True):
         """
         Generate posterior predictions using MultiSWAG.
 

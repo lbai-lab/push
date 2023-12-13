@@ -149,6 +149,9 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
     t_preds = torch.stack(preds, dim=1)
     results_dict = {}
     if f_reg:
+        valid_modes = ["mean", "median", "min", "max"]
+        for mode_val in mode:
+            assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         if "mean" in mode:
             results_dict["mean"] = t_preds.mean(dim=1)
         if "median" in mode:
@@ -157,9 +160,10 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
             results_dict["min"] = t_preds.min(dim=1).values
         if "max" in mode:
             results_dict["max"] = t_preds.max(dim=1).values
-        # else:
-        #     raise ValueError(f"Mode {mode} not supported ...")
     else:
+        valid_modes = ["logits", "mean_prob", "mode"]
+        for mode_val in mode:
+            assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         t_preds_softmax = t_preds.softmax(dim=2)
         if mode == "logits":
             results_dict["logits"] = t_preds
@@ -168,8 +172,6 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         if mode == "mode":
             cls = t_preds_softmax.argmax(dim=2)
             results_dict["mode"] = torch.mode(cls, dim=1).values
-        # else:
-        #     raise ValueError(f"Mode {mode} not supported ...")
     return results_dict
 
 

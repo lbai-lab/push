@@ -129,7 +129,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
 def _leader_pred(particle: Particle,
                         dataloader: DataLoader, scale: float,
                         var_clamp: float, num_samples: int,
-                        mode: List[str], num_models: int, f_reg: bool = True) -> torch.Tensor:
+                        mode: List[str], num_models: int, f_reg: bool = True) -> dict:
     """Generate MSWAG predictions using the lead particle in a MSWAG PusH distribution.
 
     Args:
@@ -142,7 +142,7 @@ def _leader_pred(particle: Particle,
         num_models (int): Number of models in the ensemble.
 
     Returns:
-        torch.Tensor: Ensemble predictions for the input data.
+        results_dict (dict): Ensemble predictions for each mode. Access
     """
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     preds = []
@@ -154,6 +154,9 @@ def _leader_pred(particle: Particle,
     t_preds = [torch.cat(tensor_list, dim=0)for tensor_list in preds]
     results_dict = {}
     if f_reg:
+        valid_modes = ["mean", "median", "min", "max"]
+        for mode_val in mode:
+            assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         stacked_preds = torch.stack(t_preds, dim=0)
         if "mean" in mode:
             results_dict["mean"] = torch.mean(stacked_preds, dim=0)
@@ -164,6 +167,9 @@ def _leader_pred(particle: Particle,
         if "max" in mode:
             results_dict["max"] = torch.max(stacked_preds, dim=0).values
     else:
+        valid_modes = ["mode", "mean", "median"]
+        for mode_val in mode:
+            assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         preds_softmax = [entry.softmax(dim=1) for entry in t_preds]
         if "mode" in mode:
             cls = [tensor_list.argmax(dim=1) for tensor_list in preds_softmax]

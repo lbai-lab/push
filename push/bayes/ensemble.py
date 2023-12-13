@@ -57,8 +57,8 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
             losses += [loss]
             for pid in other_particles:
                 particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
-        print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
-    print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
+    #     print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
+    # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
 
 
 def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) -> None:
@@ -87,7 +87,7 @@ def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) ->
 # Deep Ensemble Inference
 # =============================================================================
 
-def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = True, mode="mean") -> torch.Tensor:
+def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = True, mode=["mean"]) -> dict:
     """
     Generate predictions using the lead particle in a deep ensemble for a DataLoader.
 
@@ -112,10 +112,13 @@ def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = Tr
     acc = []
     for data, label in dataloader:
         acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
-    return torch.cat(acc)
+    results_dict = {}
+    for mode in mode:
+        results_dict[mode] = torch.cat([result[mode] for result in acc], dim=0)
+    return results_dict
 
 
-def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mode="mean") -> torch.Tensor:
+def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mode=["mean"]) -> torch.Tensor:
     """
     Generate predictions using the lead particle in a deep ensemble.
 
@@ -141,30 +144,33 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     preds = []
     preds += [detach_to_cpu(particle.forward(data).wait())]
-    # print("leader pred: ", preds)
     for pid in other_particles:
         preds += [particle.send(pid, "ENSEMBLE_PRED", data).wait()]
     t_preds = torch.stack(preds, dim=1)
+    results_dict = {}
     if f_reg:
-        if mode == "mean":
-            return t_preds.mean(dim=1)
-        elif mode == "median":
-            return t_preds.median(dim=1).values
-        elif mode == "min":
-            return t_preds.min(dim=1).values
-        elif mode == "max":
-            return t_preds.max(dim=1).values
-        else:
-            raise ValueError(f"Mode {mode} not supported ...")
+        if "mean" in mode:
+            results_dict["mean"] = t_preds.mean(dim=1)
+        if "median" in mode:
+            results_dict["median"] = t_preds.median(dim=1).values
+        if "min" in mode:
+            results_dict["min"] = t_preds.min(dim=1).values
+        if "max" in mode:
+            results_dict["max"] = t_preds.max(dim=1).values
+        # else:
+        #     raise ValueError(f"Mode {mode} not supported ...")
     else:
         t_preds_softmax = t_preds.softmax(dim=2)
         if mode == "logits":
-            return t_preds
+            results_dict["logits"] = t_preds
         if mode == "mean_prob":
-            return torch.mean(t_preds_softmax, dim=1)
+            results_dict["mean_prob"] = torch.mean(t_preds_softmax, dim=1)
         if mode == "mode":
             cls = t_preds_softmax.argmax(dim=2)
-            return torch.mode(cls, dim=1).values
+            results_dict["mode"] = torch.mode(cls, dim=1).values
+        # else:
+        #     raise ValueError(f"Mode {mode} not supported ...")
+    return results_dict
 
 
 def _ensemble_pred(particle: Particle, data) -> None:
@@ -246,7 +252,7 @@ class Ensemble(Infer):
         if f_save:
             self.push_dist.save()
 
-    def posterior_pred(self, data: DataLoader, f_reg=True, mode="mean") -> torch.Tensor:
+    def posterior_pred(self, data: DataLoader, f_reg=True, mode = ["mean"]) -> torch.Tensor:
         """
         Generate posterior predictions for the given data.
 

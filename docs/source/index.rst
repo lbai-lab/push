@@ -8,7 +8,7 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
    PusH and these docs are under active development. Use at your own risk.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Quick Start
 
    quick_start/Quick_Start.ipynb

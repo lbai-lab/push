@@ -1,15 +1,25 @@
 MultiSWAG
 =======================
 
-This folder contains tutorials for Deep Ensembles with Push.
+This folder contains tutorials for MultiSWAG with Push.
 
-- `MultiSWAG`_ is a tutorial for running MultiSWAG on Push.
+- `Regression`_ is a tutorial for running MultiSWAG on a regression task in Push.
+- `Classification`_ is a tutorial for running MultiSWAG on a vision classification task in Push.
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
-   MultiSWAG.ipynb
+   mswag_regression.ipynb
 
-.. _MultiSWAG:
-   ./MultiSWAG.ipynb
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   mswag_classification.ipynb
+
+.. _Regression:
+   ./mswag_regression.ipynb
+
+.. _Regression:
+   ./mwag_classification.ipynb

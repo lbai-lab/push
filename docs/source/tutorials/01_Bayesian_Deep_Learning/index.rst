@@ -4,7 +4,7 @@ Bayesian Deep Learning
 This folder contains tutorials for Bayesian Deep Learning with Push.
 
 - `Bayesian Deep Learning`_ is the basic tutorial for usage of Push.
-- `MultiSWAG`_ is a tutorial for running MultiSWAG on Push.
+- `MC Dropout`_ is the basic tutorial for MC Dropout with Push.
 
 .. toctree::
    :maxdepth: 1
@@ -16,10 +16,11 @@ This folder contains tutorials for Bayesian Deep Learning with Push.
    :maxdepth: 1
    :hidden:
 
-   MultiSWAG.ipynb
+   MCDROPOUT.ipynb
 
 .. _Bayesian Deep Learning:
    ./bayesian_deep_learning.ipynb
 
-.. _MultiSWAG:
-   ./MultiSWAG.ipynb
+.. _MC Dropout:
+   ./MCDROPOUT.ipynb
+

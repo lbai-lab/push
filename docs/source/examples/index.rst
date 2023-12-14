@@ -1,8 +1,14 @@
-Overview of Examples
+Examples
 =====================
 
-Here are examples of training bayesian neural networks with Push `Documentation`_
+Here are examples of training deep bayesian neural networks with Push.
 
-.. _Documentation:
-  https://lbai-push.readthedocs.io/en/latest/
-  
+- `Bayesian Deep Learning`_ contain examples of bayesian deep learning in Push.
+
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
+   :caption: Bayesian Deep Learning
+
+   01_Bayesian_Deep_Learning/index

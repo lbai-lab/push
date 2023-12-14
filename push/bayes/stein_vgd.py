@@ -150,11 +150,9 @@ def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, 
             futs = [particle.send(pid, "SVGD_FOLLOW", lr, update[pid]) for pid in other_particles]
             [f.wait() for f in futs]
             _svgd_follow(particle, lr, update[particle.pid])
-
             loss = loss_fn(particle.forward(data).wait().to("cpu"), label)
-            losses += [torch.mean(torch.tensor(loss))]
-
-        print(f"Average loss {torch.mean(torch.tensor(losses))}")
+            losses += [torch.mean(loss).item()]
+        # print(f"Average loss {torch.mean(torch.tensor(losses))}")
 
 
 def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
@@ -218,7 +216,7 @@ def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscal
 
             losses += [torch.mean(torch.tensor(loss))]
 
-        print(f"Average loss {torch.mean(torch.tensor(losses))}")
+        # print(f"Average loss {torch.mean(torch.tensor(losses))}")
 
 
 def _svgd_step(particle: Particle, loss_fn: Callable, data: torch.Tensor, label: torch.Tensor) -> None:
@@ -317,7 +315,7 @@ class SteinVGD(Infer):
             pids += [pid]
         self.push_dist.p_wait([self.push_dist.p_launch(0, "SVGD_LEADER", prior, loss_fn, lengthscale, lr, dataloader, epochs)])
 
-    def posterior_pred(self, data: DataLoader, f_reg=True, mode="mean") -> torch.Tensor:
+    def posterior_pred(self, data: DataLoader, f_reg=True, mode=["mean"]) -> torch.Tensor:
         if isinstance(data, torch.Tensor):
             fut = self.push_dist.p_launch(0, "LEADER_PRED", data, f_reg, mode)
             return self.push_dist.p_wait([fut])[fut._fid]

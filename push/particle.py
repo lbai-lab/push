@@ -37,6 +37,14 @@ class Particle(Waitable):
         """
         return self._node_event_loop.particles()
 
+    def other_particles(self) -> List[int]:
+        """Returns all particles except current particle.
+
+        Returns:
+            List[int]: List of all particle identifiers visible to current particle except current particle.
+        """
+        return list(filter(lambda x: x != self.pid, self._node_event_loop.particles()))
+
     def register_receive(self, msg: str, fn: Callable, state: dict[str, any]) -> None:
         """Register receive functionality for current particle.
 

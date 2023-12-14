@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset
-
 import push.push as ppush
+import torch.nn.functional as F
+from torch.utils.data import Dataset
 from push.bayes.ensemble import mk_optim
 
 
@@ -82,7 +82,29 @@ class MiniNN(nn.Module):
         x = torch.nn.ReLU()(x)
         x = self.fc2(x)
         return x
-    
+
+class TwoMoonsModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # input layer
+        self.fc1 = nn.Linear(2, 64)
+        self.dropout1 = nn.Dropout(p=0.2)
+
+        # hidden layers
+        self.fc2 = nn.Linear(64, 64)
+        self.dropout2 = nn.Dropout(p=0.2)
+        
+        # output layer
+        self.fc3 = nn.Linear(64, 2)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.dropout1(x)
+        x = F.relu(self.fc2(x))
+        x = self.dropout2(x)
+        x = self.fc3(x)
+
+        return x
 
 # =============================================================================
 # Model

@@ -6,7 +6,7 @@ This folder contains tutorials for Monte Carlo Dropout and Multi Monte Carlo Dro
 - `MC Dropout`_ is a tutorial for running Multi Monte Carlo Dropout on a classification task in PusH.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    MCDROPOUT.ipynb

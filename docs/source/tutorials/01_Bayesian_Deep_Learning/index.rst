@@ -6,7 +6,7 @@ This folder contains tutorials for Bayesian Deep Learning with Push.
 - `Bayesian Deep Learning`_ is the basic tutorial for usage of Push.
   
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    bayesian_deep_learning.ipynb

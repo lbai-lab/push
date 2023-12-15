@@ -48,6 +48,7 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
         DataLoader and loss function. The lead particle also communicates with other particles in the ensemble during training,
         instructing them to step through the batch and training loop in a coordinated manner.
     """
+    
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     # Training loop
     for e in tqdm(range(epochs)):

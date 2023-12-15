@@ -220,7 +220,7 @@ class Ensemble(Infer):
         
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
-                    loss_fn=torch.nn.MSELoss(),
+                    loss_fn: Callable = torch.nn.MSELoss(),
                     num_ensembles: int = 2, mk_optim=mk_optim,
                     ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """

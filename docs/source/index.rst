@@ -20,13 +20,11 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
 
    tutorials/index
 
-
 .. toctree::
-   :glob:
    :maxdepth: 2
    :caption: Examples
 
-   examples/index
+   examples/01_Bayesian_Deep_Learning/index.rst
 
 .. toctree::
    :maxdepth: 2

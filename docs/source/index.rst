@@ -14,19 +14,16 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
    quick_start/Quick_Start.ipynb
 
 .. toctree::
-   :glob:
    :maxdepth: 2
    :caption: Tutorials
 
-   tutorials/index
-
+   tutorials/01_Bayesian_Deep_Learning/index.rst
 
 .. toctree::
-   :glob:
    :maxdepth: 2
    :caption: Examples
 
-   examples/**/index
+   examples/01_Bayesian_Deep_Learning/index.rst
 
 .. toctree::
    :maxdepth: 2

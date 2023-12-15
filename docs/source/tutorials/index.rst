@@ -1,4 +1,4 @@
-Overview of Tutorials
+Tutorials
 =====================
 
 Here are numerous ipython notebooks that demonstrate how to use Push `Documentation`_

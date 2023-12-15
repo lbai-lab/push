@@ -12,7 +12,6 @@ Here are examples of training deep bayesian neural networks with PusH.
    :maxdepth: 2
    :caption: MultiSWAG
 
-   02_Multi_SWAG/mwag_classification.ipynb
    02_Multi_SWAG/mswag_regression.ipynb
 
 .. toctree::
@@ -22,7 +21,6 @@ Here are examples of training deep bayesian neural networks with PusH.
    04_MC_Dropout/MCDROPOUT.ipynb
 
 .. _MultiSWAG:
-   02_Multi_SWAG/mwag_classification.ipynb
    02_Multi_SWAG/mswag_regression.ipynb
 
 .. _MC Dropout:

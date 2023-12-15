@@ -14,13 +14,6 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
    quick_start/Quick_Start.ipynb
 
 .. toctree::
-   :glob:
-   :maxdepth: 2
-   :caption: Tutorials
-
-   tutorials/index
-
-.. toctree::
    :maxdepth: 2
    :caption: Tutorials
 

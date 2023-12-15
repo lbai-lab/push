@@ -22,6 +22,13 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
 
 
 .. toctree::
+   :glob:
+   :maxdepth: 2
+   :caption: Examples
+
+   examples/index
+
+.. toctree::
    :maxdepth: 2
    :caption: Package Reference
 

@@ -21,5 +21,5 @@ This folder contains tutorials for MultiSWAG with Push.
 .. _Regression:
    ./mswag_regression.ipynb
 
-.. _Regression:
+.. _Classification:
    ./mwag_classification.ipynb

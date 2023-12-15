@@ -8,18 +8,17 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
    PusH and these docs are under active development. Use at your own risk.
 
 .. toctree::
-   :glob:
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Quick Start
 
-   quick_start/index
+   quick_start/Quick_Start.ipynb
 
 .. toctree::
    :glob:
    :maxdepth: 2
    :caption: Tutorials
 
-   tutorials/**/index
+   tutorials/index
 
 
 .. toctree::
@@ -27,7 +26,7 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
    :maxdepth: 2
    :caption: Examples
 
-   examples/index
+   examples/**/index
 
 .. toctree::
    :maxdepth: 2

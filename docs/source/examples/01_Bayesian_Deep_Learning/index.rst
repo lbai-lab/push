@@ -18,10 +18,10 @@ Here are examples of training deep bayesian neural networks with PusH.
    :maxdepth: 1
    :caption: MC Dropout
 
-   04_MC_Dropout/index
+   04_MC_Dropout/MCDROPOUT.ipynb
 
 .. _MultiSWAG:
    02_Multi_SWAG/index
 
 .. _MC Dropout:
-   04_MC_Dropout/index
+   04_MC_Dropout/MCDROPOUT.ipynb

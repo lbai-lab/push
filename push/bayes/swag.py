@@ -72,6 +72,7 @@ def _swag_swag(particle: Particle, reset: bool, cov_mat_rank: int) -> None:
     Args:
         particle (Particle): SWAG particle.
         reset (bool): Whether to reset or update moments.
+        cov_mat_rank (int): Maximum rank of low rank plus diagonal covariance matrix
     """
     state = particle.state
     if reset:
@@ -96,6 +97,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
         particle (Particle): MSWAG particle.
         dataloader (DataLoader): DataLoader.
         loss_fn (Callable): Loss function.
+        cov_mat_rank (int): Maximum rank of low rank plus diagonal covariance matrix
         pretrain_epochs (int): Number of pre-training epochs.
         swag_epochs (int): Number of SWAG epochs.
         swag_pids (list[int]): List of SWAG particle IDs.
@@ -555,6 +557,7 @@ class MultiSWAG(Infer):
             dataloader (DataLoader): DataLoader containing the data.
             loss_fn (Callable): Loss function used for training.
             num_models (int): Number of models to be ensembled.
+            cov_mat_rank (int): Maximum rank of low rank plus diagonal covariance matrix
             lr (float): Learning rate for training.
             pretrain_epochs (int): Number of epochs for pretraining.
             swag_epochs (int): Number of epochs for SWAG training.
@@ -642,6 +645,7 @@ def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
         pretrain_epochs (int): Number of epochs for pretraining.
         swag_epochs (int): Number of epochs for SWAG training.
         num_models (int): Number of models to use in MultiSWAG.
+        cov_mat_rank (int): Maximum rank of low rank plus diagonal covariance matrix
         cache_size (int): Size of the cache for MultiSWAG.
         view_size (int): Size of the view for MultiSWAG.
         nn (Callable): Callable function representing the neural network model.

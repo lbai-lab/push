@@ -12,8 +12,8 @@ Here are numerous ipython notebooks that demonstrate how to use Push `Documentat
    :maxdepth: 1
    :hidden:
 
-   bayesian_deep_learning.ipynb
+   01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
 
 .. _Bayesian Deep Learning:
-   ./bayesian_deep_learning.ipynb
+   01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
 

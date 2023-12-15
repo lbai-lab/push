@@ -68,7 +68,8 @@ class TestEnd2End(unittest.TestCase):
             torch.nn.MSELoss(),
             epochs,
             BiggerNN, L, D,
-            num_ensembles=num_ensembles
+            num_ensembles=num_ensembles,
+            num_devices=1
         )
 
     def test_swag(self):
@@ -86,10 +87,13 @@ class TestEnd2End(unittest.TestCase):
             torch.nn.MSELoss(),
             pretrain_epochs,
             swag_epochs,
-            num_models,
-            cache_size,
-            view_size, 
-            BiggerNN, L, D, num_devices=1
+            BiggerNN,
+            L, D, 
+            cache_size=cache_size,
+            view_size=view_size, 
+            num_models=num_models,
+            num_devices=1,
+            cov_mat_rank=20
         )
 
     def test_stein_vgd(self):
@@ -97,7 +101,6 @@ class TestEnd2End(unittest.TestCase):
         D = 20
         epochs = 3
         particles = 4
-        devices = 1
         cache_size = 4
         view_size = 4
         dataset = RandDataset(D)
@@ -112,6 +115,6 @@ class TestEnd2End(unittest.TestCase):
             epochs, particles,
             BiggerNN, L, D,
             lengthscale=1.0, lr=1e-3, prior=None,
-            cache_size=cache_size, view_size=view_size, num_devices=devices,
+            cache_size=cache_size, view_size=view_size, num_devices=1,
             svgd_entry=push.bayes.stein_vgd._svgd_leader, svgd_state=svgd_state
         )

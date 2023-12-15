@@ -20,6 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Operating System :: OS Independent",
 ]
+[tool.setuptools]
+package-dir = {"" = "push"}
 
 [tool.flit.module]
 name = "push"

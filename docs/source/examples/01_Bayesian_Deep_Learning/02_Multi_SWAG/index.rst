@@ -7,13 +7,13 @@ This folder contains tutorials for MultiSWAG with Push.
 - `Classification`_ is a tutorial for running MultiSWAG on a vision classification task in Push.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    mswag_regression.ipynb
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
    mswag_classification.ipynb

@@ -31,14 +31,16 @@ conda activate push_env
 ```
 pip install -e .
 ```
-3. Install requirements
+This will install PusH and its dependencies
+3. OPTIONAL: Install requirements
+To run any of the experiments in the `experiments` folder, additional packages are necessary.
 ```
 pip install pytz wandb matplotlib pandas torch torch_geometric torch_vision h5py pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
 ```
 
 ## Quick Start
 1. Install `push` and its dependencies following [installation](https://github.com/lbai-lab/push#installation).
-2. Run some basic tests for various BDL algorithms. 
+2. Run some basic tests for various BDL algorithms to test installation. 
 ```
 ./run_tests.sh
 ```

@@ -45,7 +45,7 @@ def _swag_step(particle: Particle,
     particle.step(loss_fn, data, label, *args)
 
 
-def update_theta(state, state_sq, param, param_sq, n):
+def update_theta(state, state_sq, state_cov_mat_sqrt, param, param_sq, n, cov_mat_rank):
     """Updates the first and second moments and iterates the number of parameter settings averaged.
 
     Args:
@@ -55,12 +55,18 @@ def update_theta(state, state_sq, param, param_sq, n):
         param_sq: Squared parameters.
         n (int): Number of iterations.
     """
-    for st, st_sq, p, p_sq in zip(state, state_sq, param, param_sq):
-        st.data = (st.data * n + p.data)/(n+1)
-        st_sq.data = (st_sq.data * n + p_sq.data)/(n+1)
+    for st, st_sq, st_cov_mat_sqrt, p, p_sq in zip(state, state_sq, state_cov_mat_sqrt, param, param_sq):
+        st.data = (st.data * n + p.data) / (n + 1)
+        st_sq.data = (st_sq.data * n + p_sq.data) / (n + 1)
+        dev = (p.data - st.data).view(-1, 1)
+        dev = dev.to(st_cov_mat_sqrt.device)
+        st_cov_mat_sqrt.data = torch.cat((st_cov_mat_sqrt, dev.view(-1, 1).t()), dim=0)
+        # remove first column if we have stored too many models
+        if (n + 1) > cov_mat_rank:
+            st_cov_mat_sqrt.data = st_cov_mat_sqrt.data[1:, :]
 
 
-def _swag_swag(particle: Particle, reset: bool) -> None:
+def _swag_swag(particle: Particle, reset: bool, cov_mat_rank: int) -> None:
     """Initializes or updates moments for SWAG.
 
     Args:
@@ -70,17 +76,19 @@ def _swag_swag(particle: Particle, reset: bool) -> None:
     state = particle.state
     if reset:
         state[particle.pid] = {
-            "mom1": [param for param in particle.module.parameters()],
-            "mom2": [param*param for param in particle.module.parameters()]
+            "mom1": [param.clone() for param in particle.module.parameters()],
+            "mom2": [param.clone()*param.clone() for param in particle.module.parameters()],
+            "cov_mat_sqrt" : [torch.zeros((0, param.numel())).to(particle.device) for param in particle.module.parameters()]
         }
+        params = [param for param in particle.module.parameters()]
     else:
         params = [param for param in particle.module.parameters()]
         params_sq = [param*param for param in particle.module.parameters()]
-        update_theta(state[particle.pid]["mom1"], state[particle.pid]["mom2"], params, params_sq, state["n"])
+        update_theta(state[particle.pid]["mom1"], state[particle.pid]["mom2"], state[particle.pid]["cov_mat_sqrt"], params, params_sq, state["n"], cov_mat_rank)
         state["n"] += 1
 
 
-def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
+def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_rank: int,
                     pretrain_epochs: int, swag_epochs: int, swag_pids: list[int]) -> None:
     """Training function for MSWAG particle.
 
@@ -104,8 +112,8 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
         # print("Average epoch loss", torch.mean(torch.tensor(losses)))
     
     # Initialize SWAG
-    [particle.send(pid, "SWAG_SWAG", True) for pid in other_pids]
-    _swag_swag(particle, True)
+    [particle.send(pid, "SWAG_SWAG", True, cov_mat_rank) for pid in other_pids]
+    _swag_swag(particle, True, cov_mat_rank)
     
     # SWAG epochs
     for e in tqdm(range(swag_epochs)):
@@ -116,8 +124,8 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable,
             fut = particle.step(loss_fn, data, label)
             [f.wait() for f in futs]
             losses += [fut.wait()]
-        futs = [particle.send(pid, "SWAG_SWAG", False) for pid in other_pids]
-        _swag_swag(particle, False)
+        futs = [particle.send(pid, "SWAG_SWAG", False, cov_mat_rank) for pid in other_pids]
+        _swag_swag(particle, False, cov_mat_rank)
         [f.wait() for f in futs]
         # print("Average epoch loss", torch.mean(torch.tensor(losses)))
 
@@ -214,6 +222,7 @@ def _mswag_pred(particle: Particle,
     # Gather
     mean_list = [param for param in particle.state[pid]["mom1"]]
     sq_mean_list = [param for param in particle.state[pid]["mom2"]]
+    cov_mat_sqrt_list = [param for param in particle.state[pid]["cov_mat_sqrt"]]
 
     scale_sqrt = scale ** 0.5
     mean = flatten(mean_list)
@@ -226,7 +235,19 @@ def _mswag_pred(particle: Particle,
         # Draw diagonal variance sample
         var = torch.clamp(sq_mean - mean ** 2, var_clamp)
         var_sample = var.sqrt() * torch.randn_like(var, requires_grad=False)
-        rand_sample = var_sample
+         # if covariance draw low rank sample
+
+        cov_mat_sqrt = torch.cat(cov_mat_sqrt_list, dim=1)
+
+        cov_sample = cov_mat_sqrt.t().matmul(
+            cov_mat_sqrt.new_empty(
+                (cov_mat_sqrt.size(0),), requires_grad=False
+            ).normal_()
+        )
+        cov_sample /= (num_samples - 1) ** 0.5
+
+        rand_sample = var_sample + cov_sample
+        # rand_sample = var_sample
 
         # Update sample with mean and scale
         sample = mean + scale_sqrt * rand_sample
@@ -521,9 +542,10 @@ class MultiSWAG(Infer):
         self.sample_pids = []
         
     def bayes_infer(self,
-                    dataloader: DataLoader, 
-                    loss_fn=torch.nn.MSELoss(),
-                    num_models=1, pretrain_epochs=10, swag_epochs=5,
+                    dataloader: DataLoader,
+                    pretrain_epochs: int, swag_epochs: int,
+                    loss_fn: Callable = torch.nn.MSELoss(),
+                    num_models: int = 1, cov_mat_rank: int = 20,
                     mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                     mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
         """
@@ -572,7 +594,7 @@ class MultiSWAG(Infer):
             if pid in mswag_state:
                 raise ValueError(f"Cannot run with state {pid}. Please rename.")
 
-        self.push_dist.p_wait([self.push_dist.p_launch(self.swag_pids[0], "SWAG_PARTICLE", dataloader, loss_fn, pretrain_epochs, swag_epochs, self.swag_pids)])
+        self.push_dist.p_wait([self.push_dist.p_launch(self.swag_pids[0], "SWAG_PARTICLE", dataloader, loss_fn, cov_mat_rank, pretrain_epochs, swag_epochs, self.swag_pids)])
 
         if f_save:
             self.push_dist.save()
@@ -609,7 +631,7 @@ class MultiSWAG(Infer):
 
 def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
                 swag_epochs: int, nn: Callable, *args, num_devices=1, cache_size: int = 4, view_size: int = 4,
-                num_models: int, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
+                num_models: int, cov_mat_rank: int, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                 mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
     """
     Train a MultiSWAG model.
@@ -637,7 +659,7 @@ def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
 
     """
     mswag = MultiSWAG(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
-    mswag.bayes_infer(dataloader, loss_fn, num_models, pretrain_epochs=pretrain_epochs,
-                      swag_epochs=swag_epochs, mswag_entry=mswag_entry, mswag_state=mswag_state,
+    mswag.bayes_infer(dataloader, pretrain_epochs=pretrain_epochs,
+                      swag_epochs=swag_epochs, loss_fn=loss_fn, num_models=num_models, cov_mat_rank=cov_mat_rank, mswag_entry=mswag_entry, mswag_state=mswag_state,
                       f_save=f_save, mswag_sample_entry=mswag_sample_entry, mswag_sample=mswag_sample)
     return mswag

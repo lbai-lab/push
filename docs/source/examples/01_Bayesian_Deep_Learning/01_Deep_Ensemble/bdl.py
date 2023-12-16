@@ -4,6 +4,8 @@ import push.push as ppush
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 from push.bayes.ensemble import mk_optim
+from torchvision import datasets, transforms
+import os
 
 
 # =============================================================================
@@ -34,7 +36,6 @@ class SineWithNoiseDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.xs[idx], self.ys[idx]
-
 
 # =============================================================================
 # Architecture

@@ -1,11 +1,12 @@
-from torch.utils.data import DataLoader
-from typing import *
 import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from typing import *
+
 from push.bayes.infer import Infer
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
 from push.lib.utils import detach_to_cpu
-from tqdm import tqdm
 
 
 # =============================================================================

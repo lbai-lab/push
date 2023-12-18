@@ -1,18 +1,19 @@
 import torch
 import torch.nn as nn
-
-from typing import Callable
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import *
+
+from push.bayes.dropout_util import patch_dropout
 from push.bayes.infer import Infer
 from push.particle import Particle
-from .dropout_util import FixableDropout, patch_dropout
 from push.lib.utils import detach_to_cpu
+
 
 # =============================================================================
 # Helper
 # =============================================================================
+
 def mk_module(mk_nn: Callable[..., Any], patch, *args: any) -> nn.Module:
     """Wrapper for mk_nn that patches dropout if set.
 
@@ -31,6 +32,7 @@ def mk_module(mk_nn: Callable[..., Any], patch, *args: any) -> nn.Module:
     else:
         return mk_nn(*args)
 
+
 def mk_optim(params):
     """Returns Adam optimizer.
     
@@ -41,6 +43,7 @@ def mk_optim(params):
         torch.optim.Adam: Adam optimizer.
     """
     return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
+
 
 # =============================================================================
 # MC Dropout Particle Functions
@@ -61,10 +64,12 @@ def _multimc_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable,
             average_loss = sum(losses)/len(losses)
             print(f"Average loss after epoch {e}: {average_loss}")
 
+
 def _multimc_step(particle: Particle, loss_fn: Callable, data, label, *args):
     particle.module.train()
     return particle.step(loss_fn, data, label, *args).wait()
-    
+
+
 # =============================================================================
 # MC Dropout Inference
 # =============================================================================
@@ -78,11 +83,13 @@ def freeze_dropout(particle: Particle):
         if module.__class__.__name__.startswith('Dropout'):
             module.train()
 
+
 def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg=True, mode="mean", num_samples=10, freeze_on_eval=True) -> torch.Tensor:
     acc = []
     for data, label in dataloader:
         acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
     return torch.cat(acc)
+
 
 def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=10, freeze_on_eval=True):
     if freeze_on_eval:
@@ -112,6 +119,7 @@ def _leader_pred(particle: Particle, data, f_reg=True, mode="mean", num_samples=
         cls = t_preds.softmax(dim=1).argmax(dim=1)
         return torch.mode(cls, dim=1)
 
+
 def _multimc_pred(particle: Particle, data: torch.Tensor, num_samples: int = 10, freeze_on_eval: bool = True):
     if freeze_on_eval:
         freeze_dropout(particle)
@@ -120,9 +128,11 @@ def _multimc_pred(particle: Particle, data: torch.Tensor, num_samples: int = 10,
     preds = [detach_to_cpu(particle.forward(data).wait()) for _ in range(num_samples)]
     return torch.stack(preds, dim=0)
 
+
 # =============================================================================
 # Multi MC Dropout
 # =============================================================================
+
 class MultiMCDropout(Infer):
     """Multi MC Dropout Class.
 
@@ -134,7 +144,6 @@ class MultiMCDropout(Infer):
     def __init__(self, mk_nn: Callable[..., Any], *args: any, patch=True, num_devices=1, cache_size=4, view_size=4) -> None:
         super(MultiMCDropout, self).__init__(mk_module, *(mk_nn, patch, *args), num_devices=num_devices, cache_size=cache_size, view_size=view_size)
 
-
     def bayes_infer(self,
                     dataloader: DataLoader, 
                     epochs: int,
@@ -142,7 +151,6 @@ class MultiMCDropout(Infer):
                     size_ensemble: int = 2,
                     mk_optim=mk_optim, f_save: bool = False):
         """Create PusH distribution and train it.
-        
         """
         # Create main particle
         pids = []
@@ -201,6 +209,7 @@ class MultiMCDropout(Infer):
         mc_dropout = MultiMCDropout(nn, *args, patch=patch, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
         mc_dropout.bayes_infer(dataloader, epochs, loss_fn, size_ensemble, mk_optim)
         return mc_dropout
+
 
 # =============================================================================
 # MC Dropout Training

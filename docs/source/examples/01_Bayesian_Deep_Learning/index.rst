@@ -22,10 +22,9 @@ Here are examples of training deep bayesian neural networks with PusH.
    02_Multi_SWAG/mswag_regression.ipynb
 
 
+.. _MC Dropout:
+   00_MC_Dropout/MCDROPOUT.ipynb
+
+
 .. _MultiSWAG:
    02_Multi_SWAG/mswag_regression.ipynb
-
-
-.. _MC Dropout:
-   04_MC_Dropout/MCDROPOUT.ipynb
-   

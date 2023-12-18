@@ -1,15 +1,15 @@
 Monte Carlo Dropout
 =======================
 
-This folder contains tutorials for Monte Carlo Dropout and Multi Monte Carlo Dropout.
+This folder contains tutorials for Monte Carlo Dropout.
 
-- `MC Dropout`_ is a tutorial for running Multi Monte Carlo Dropout on a classification task in PusH.
+- `MC Dropout`_ is a tutorial for running Monte Carlo Dropout on a classification task in Push.
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
-   MCDROPOUT.ipynb
+   mc_dropout.ipynb
 
 .. _MC Dropout:
-   ./MCDROPOUT.ipynb
+   ./mc_dropout.ipynb

@@ -11,7 +11,7 @@ Here are examples of training deep bayesian neural networks with PusH.
    :maxdepth: 1
    :caption: MC Dropout
 
-   00_MC_Dropout/MCDROPOUT.ipynb
+   00_MC_Dropout/mc_dropout.ipynb
 
 
 .. toctree::
@@ -31,7 +31,7 @@ Here are examples of training deep bayesian neural networks with PusH.
 
 
 .. .. _MC Dropout:
-..    00_MC_Dropout/MCDROPOUT.ipynb
+..    00_MC_Dropout/mc_dropout.ipynb
 
 
 .. .. _MultiSWAG:

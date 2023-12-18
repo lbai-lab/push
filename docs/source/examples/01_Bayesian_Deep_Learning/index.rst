@@ -3,16 +3,11 @@ Bayesian Deep Learning Examples
 
 Here are examples of training deep bayesian neural networks with PusH.
 
-- 00_MC_Dropout/MCDROPOUT.ipynb contains examples of running MCDropout in PusH.
-- 02_Multi_SWAG/mswag_regression.ipynb contain examples of running MultiSWAG in PusH.
-
-
 .. toctree::
    :maxdepth: 1
    :caption: MC Dropout
 
    00_MC_Dropout/mc_dropout.ipynb
-
 
 .. toctree::
    :glob:
@@ -20,7 +15,6 @@ Here are examples of training deep bayesian neural networks with PusH.
    :caption: Deep Ensembles
 
    ../tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
-
 
 .. toctree::
    :glob:
@@ -30,9 +24,11 @@ Here are examples of training deep bayesian neural networks with PusH.
    02_Multi_SWAG/mswag_regression.ipynb
 
 
-.. .. _MC Dropout:
-..    00_MC_Dropout/mc_dropout.ipynb
+.. _MC Dropout:
+   00_MC_Dropout/mc_dropout.ipynb contains an example of running MCDropout in Push.
 
+.. _Deep Ensembles:
+   ../tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb contains an example of running deep ensembles in Push.
 
-.. .. _MultiSWAG:
-..    02_Multi_SWAG/mswag_regression.ipynb
+.. _MultiSWAG:
+   02_Multi_SWAG/mswag_regression.ipynb contains an example of running SWAG/MultiSWAG in Push.

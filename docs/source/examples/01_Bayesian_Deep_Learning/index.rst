@@ -17,6 +17,14 @@ Here are examples of training deep bayesian neural networks with PusH.
 .. toctree::
    :glob:
    :maxdepth: 1
+   :caption: Deep Ensembles
+
+   ../tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
+
+
+.. toctree::
+   :glob:
+   :maxdepth: 1
    :caption: MultiSWAG
 
    02_Multi_SWAG/mswag_regression.ipynb

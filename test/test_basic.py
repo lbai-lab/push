@@ -127,10 +127,7 @@ if __name__ == "__main__":
             num_devices=args.devices,
             num_ensembles=num_ensembles
         )
-        print("mean", ensemble.posterior_pred(dataloader, mode="mean"))
-        print("min", ensemble.posterior_pred(dataloader, mode="min"))
-        print("median", ensemble.posterior_pred(dataloader, mode="median"))
-        print("max", ensemble.posterior_pred(dataloader, mode="max"))
+        print(ensemble.posterior_pred(dataloader, mode=["mean", "min", "median", "max"]))
 
     elif args.method == "mswag":
         pretrain_epochs = 10
@@ -138,17 +135,19 @@ if __name__ == "__main__":
         cache_size=4
         view_size=4
         start = time.perf_counter()
-        push.bayes.swag.train_mswag(
+        mswag = push.bayes.swag.train_mswag(
             dataloader,
             torch.nn.MSELoss(),
             pretrain_epochs,
             swag_epochs,
-            args.particles,
-            cache_size,
-            view_size, 
-            BiggerNN, L, D
+            BiggerNN, L, D,
+            cache_size=cache_size,
+            view_size=view_size, 
+            num_models=args.particles,
+            cov_mat_rank=20,
         )
         print("Time elapsed", time.perf_counter() - start)
+        print(mswag.posterior_pred(dataloader, mode=["mean", "min", "median", "max"]))
 
     elif args.method == "stein_vgd":
         import numpy as np
@@ -160,7 +159,7 @@ if __name__ == "__main__":
             "D": D,
             "N": N,
         }
-        ensemble = push.bayes.stein_vgd.train_svgd(
+        svgd = push.bayes.stein_vgd.train_svgd(
             dataloader, torch.nn.MSELoss(),
             args.epochs, args.particles,
             BiggerNN, L, D,
@@ -169,10 +168,7 @@ if __name__ == "__main__":
             svgd_entry=push.bayes.stein_vgd._svgd_leader, svgd_state=svgd_state
         )
         print("Time elapsed", time.perf_counter() - start)
-        print("mean", ensemble.posterior_pred(dataloader, mode="mean"))
-        print("min", ensemble.posterior_pred(dataloader, mode="min"))
-        print("median", ensemble.posterior_pred(dataloader, mode="median"))
-        print("max", ensemble.posterior_pred(dataloader, mode="max"))
+        print(svgd.posterior_pred(dataloader, mode=["mean", "min", "median", "max"]))
 
     else:
         raise ValueError(f"Method {args.method} not supported ...")

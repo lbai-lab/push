@@ -1,11 +1,12 @@
-from torch.utils.data import DataLoader
-from typing import *
 import torch
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+from typing import *
+
 from push.bayes.infer import Infer
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
 from push.lib.utils import detach_to_cpu
-from tqdm import tqdm
 
 
 # =============================================================================
@@ -634,7 +635,7 @@ class MultiSWAG(Infer):
 
 def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
                 swag_epochs: int, nn: Callable, *args, num_devices=1, cache_size: int = 4, view_size: int = 4,
-                num_models: int, cov_mat_rank: int, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
+                num_models: int = 1, cov_mat_rank: int=20, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                 mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
     """
     Train a MultiSWAG model.

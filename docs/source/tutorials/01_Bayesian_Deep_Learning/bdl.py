@@ -52,6 +52,7 @@ class RegNet(nn.Sequential):
         if output_dim == 2:
             self.add_module('var_split', SplitDim(correction=apply_var))
 
+
 class BiggerNN(nn.Module):
     def __init__(self, n, input_dim, output_dim, hidden_dim):
         super(BiggerNN, self).__init__()
@@ -82,6 +83,7 @@ class MiniNN(nn.Module):
         x = torch.nn.ReLU()(x)
         x = self.fc2(x)
         return x
+
 
 class TwoMoonsModel(nn.Module):
     def __init__(self):

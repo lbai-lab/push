@@ -1,7 +1,7 @@
 Bayesian Deep Learning Examples
 =====================
 
-Here are examples of training deep bayesian neural networks with PusH.
+Here are examples of BDL with PusH.
 
 .. toctree::
    :maxdepth: 1

@@ -23,6 +23,13 @@ Here are examples of BDL with PusH.
 
    02_Multi_SWAG/mswag_regression.ipynb
 
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: SVGD
+
+   03_SVG/SVGD.ipynb
+
 
 .. _MC Dropout:
    00_MC_Dropout/mc_dropout.ipynb contains an example of running MCDropout in Push.
@@ -32,3 +39,6 @@ Here are examples of BDL with PusH.
 
 .. _MultiSWAG:
    02_Multi_SWAG/mswag_regression.ipynb contains an example of running SWAG/MultiSWAG in Push.
+
+.. _SVGD:
+   03_SVG/SVGD.ipynb contains an example of running SVGD in Push.

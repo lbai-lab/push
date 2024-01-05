@@ -26,7 +26,7 @@ Here are examples of BDL with PusH.
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: SVGD
+   :caption: Stein Variational Gradient Descent (SVGD)
 
    03_SVGD/SVGD.ipynb
 

@@ -113,6 +113,9 @@ def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = Tr
     acc = []
     for data, label in dataloader:
         acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
+    # print("len: ", len(acc[0]["logits"]))
+    # print("acc[0][logits]: ", acc[0]["logits"])
+    
     results_dict = {}
     for mode_val in mode:
         results_dict[mode_val] = torch.cat([result[mode_val] for result in acc], dim=0)
@@ -147,7 +150,15 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
     preds += [detach_to_cpu(particle.forward(data).wait())]
     for pid in other_particles:
         preds += [particle.send(pid, "ENSEMBLE_PRED", data).wait()]
+    # print("preds: ", preds)
+    print("preds: ", preds)
+    print("len(preds)", len(preds))
     t_preds = torch.stack(preds, dim=1)
+    # print("t_preds: ", t_preds)
+    # print("preds len:  ", len(preds))
+    # print("preds: ", preds)
+    # print("len preds[0]: ", len(preds[0]))
+    # print("t_preds size: ", t_preds.size())
     results_dict = {}
     if f_reg:
         valid_modes = ["mean", "median", "min", "max", "std"]
@@ -164,18 +175,19 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         if "max" in mode:
             results_dict["max"] = t_preds.max(dim=1).values
     else:
-        valid_modes = ["logits", "mean_prob", "mode", "std", "prob"]
+        valid_modes = ["logits", "mode", "std", "prob"]
         for mode_val in mode:
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}." 
+
+        
         t_preds_softmax = [entry.softmax(dim=1) for entry in t_preds]
         stacked_preds = torch.stack(t_preds_softmax)
         # print("stacked_preds: ", stacked_preds)
         if "logits" in mode:
+            print("tpreds: ", t_preds)
             results_dict["logits"] = t_preds
         if "prob" in mode:
             results_dict["prob"] = stacked_preds
-        if "mean_prob" in mode:
-            results_dict["mean_prob"] = torch.mean(stacked_preds, dim=1)
         if "mode" in mode:
             cls = [tensor_list.argmax(dim=1) for tensor_list in t_preds_softmax]
             stacked_cls = torch.stack(cls)

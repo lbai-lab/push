@@ -163,17 +163,8 @@ def _leader_pred_dl(particle: Particle, dataloader: DataLoader, scale: float, va
     for data, label in dataloader:
         acc += [_leader_pred(particle, data, scale=scale, var_clamp=var_clamp, num_samples=num_samples, mode=mode, num_models=num_models, f_reg=f_reg)]
     results_dict = {}
-    # print("acc[0][logits]: ", acc[0]["logits"])
-    # Stack tensors from each list
-
-    stacked_logits = [torch.stack(item, dim=-2) for item in acc[0]["logits"]]
-
-    # Display the result
-    # print("len: ", len(acc[0]["logits"]))
-    # print("stacekd logits: ",stacked_logits)
-    # print("acc: ", acc)
-    # for mode_val in mode:
-        # results_dict[mode_val] = torch.cat([result[mode_val] for result in acc], dim=0)
+    for mode_val in mode:
+        results_dict[mode_val] = torch.cat([result[mode_val] for result in acc], dim=0)
     return results_dict
 
 def _leader_pred(particle: Particle,
@@ -200,6 +191,8 @@ def _leader_pred(particle: Particle,
     preds += [_mswag_pred(particle, data, var_clamp, scale, num_samples)]
     for pid in other_particles:
         preds += [particle.send(pid, "SWAG_PRED", data, scale, var_clamp, num_samples).wait()]
+    preds = [torch.stack(sublist, dim=0) for sublist in preds]
+    t_preds = torch.stack(preds, dim=1)
     # t_preds = preds
     # t_preds = [torch.cat(tensor_list, dim=1)for tensor_list in preds]
 
@@ -227,34 +220,18 @@ def _leader_pred(particle: Particle,
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         
 
-        t_preds_softmax = [[torch.nn.functional.softmax(tensor, dim=0) for tensor in sublist] for sublist in preds]
- 
+        # t_preds_softmax = [[torch.nn.functional.softmax(tensor, dim=0) for tensor in sublist] for sublist in preds]
+        t_preds_softmax = [entry.softmax(dim=1) for entry in t_preds]
+        stacked_preds = torch.stack(t_preds_softmax)
         if "logits" in mode:
-            # print("preds: ", preds)
-            # Stack tensors in each sublist
-            stacked_preds = [torch.stack(sublist, dim=0) for sublist in preds]
-            # print("len(stacked_preds[0]): ", len(stacked_preds[0]))
-            # Display the result
-            # print("preds_stack", stacked_preds)
-            # print("preds len: ", len(preds))
-            # preds_stack = torch.stack(preds)
-            # print("preds_stack")
-            results_dict["logits"] = stacked_preds
+            results_dict["logits"] = t_preds
+            # results_dict["logits"] = preds
         if "prob" in mode:
-            results_dict["prob"] = t_preds_softmax
+            results_dict["prob"] = stacked_preds
         if "mode" in mode:
-            cls = []
-            # print("t_preds_softmax: ", t_preds_softmax)
-            for i in range(num_models):
-                classes = []
-                for j in range(len(t_preds_softmax[i])):
-                    classes.append(t_preds_softmax[i][j].argmax())
-                cls.append(classes)
-            # Convert the list of lists to a torch tensor
-            tensor_cls = torch.tensor(cls)
-            # Calculate the mode along dimension 0
-            results_dict["mode"] = torch.mode(tensor_cls, dim=0).values
-
+            cls = [tensor_list.argmax(dim=1) for tensor_list in t_preds_softmax]
+            stacked_cls = torch.stack(cls)
+            results_dict["mode"] = torch.mode(stacked_cls, dim=1).values
         if "std" in mode:
             results_dict["std"] = torch.std(stacked_preds, dim=0)
     return results_dict

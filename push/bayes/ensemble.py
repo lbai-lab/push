@@ -113,9 +113,6 @@ def _leader_pred_dl(particle: Particle, dataloader: DataLoader, f_reg: bool = Tr
     acc = []
     for data, label in dataloader:
         acc += [_leader_pred(particle, data, f_reg=f_reg, mode=mode)]
-    # print("len: ", len(acc[0]["logits"]))
-    # print("acc[0][logits]: ", acc[0]["logits"])
-    
     results_dict = {}
     for mode_val in mode:
         results_dict[mode_val] = torch.cat([result[mode_val] for result in acc], dim=0)
@@ -151,8 +148,6 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
     for pid in other_particles:
         preds += [particle.send(pid, "ENSEMBLE_PRED", data).wait()]
     # print("preds: ", preds)
-    print("preds: ", preds)
-    print("len(preds)", len(preds))
     t_preds = torch.stack(preds, dim=1)
     # print("t_preds: ", t_preds)
     # print("preds len:  ", len(preds))
@@ -184,13 +179,13 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         stacked_preds = torch.stack(t_preds_softmax)
         # print("stacked_preds: ", stacked_preds)
         if "logits" in mode:
-            print("tpreds: ", t_preds)
             results_dict["logits"] = t_preds
         if "prob" in mode:
             results_dict["prob"] = stacked_preds
         if "mode" in mode:
             cls = [tensor_list.argmax(dim=1) for tensor_list in t_preds_softmax]
             stacked_cls = torch.stack(cls)
+            print("torch.mode(stacked_cls, dim=1).values: ", torch.mode(stacked_cls, dim=1).values)
             results_dict["mode"] = torch.mode(stacked_cls, dim=1).values
         if "std" in mode:
             results_dict["std"] = torch.std(stacked_preds, dim=1)

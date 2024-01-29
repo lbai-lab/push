@@ -4,10 +4,7 @@ import push.push as ppush
 import torch.nn.functional as F
 from torch.utils.data import Dataset
 from push.bayes.ensemble import mk_optim
-from torchvision import datasets, transforms
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
-import os
+
 
 # =============================================================================
 # Dataset
@@ -24,6 +21,7 @@ class SineDataset(Dataset):
     def __getitem__(self, idx):
         return self.xs[idx], self.ys[idx]
 
+
 class SineWithNoiseDataset(Dataset):
     def __init__(self, N, D, begin, end, noise_std=0.05):
         self.xs = torch.linspace(begin, end, N).reshape(N, D)
@@ -37,34 +35,6 @@ class SineWithNoiseDataset(Dataset):
     def __getitem__(self, idx):
         return self.xs[idx], self.ys[idx]
 
-class CustomMNISTDataset(Dataset):
-    def __init__(self, root, numbers=[0, 1], train=False, transform=None):
-        self.root = root
-        self.train = train
-        self.transform = transform
-        self.numbers = numbers
-
-        # Download MNIST dataset
-        self.mnist_dataset = datasets.MNIST(root=root, train=train, transform=transforms.ToTensor(), download=False)
-        
-        # Filter images based on selected numbers
-        indices = np.isin(self.mnist_dataset.targets.numpy(), self.numbers)
-        self.data = self.mnist_dataset.data[indices]
-        self.targets = self.mnist_dataset.targets[indices]
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        image, label = self.data[idx], int(self.targets[idx])
-        
-        # Convert to PIL Image
-        image = transforms.ToPILImage()(image)
-
-        if self.transform:
-            image = self.transform(image)
-
-        return image, label
 
 # =============================================================================
 # Architecture
@@ -81,6 +51,7 @@ class RegNet(nn.Sequential):
 
         if output_dim == 2:
             self.add_module('var_split', SplitDim(correction=apply_var))
+
 
 class BiggerNN(nn.Module):
     def __init__(self, n, input_dim, output_dim, hidden_dim):
@@ -112,6 +83,7 @@ class MiniNN(nn.Module):
         x = torch.nn.ReLU()(x)
         x = self.fc2(x)
         return x
+
 
 class TwoMoonsModel(nn.Module):
     def __init__(self):

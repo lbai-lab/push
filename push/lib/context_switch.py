@@ -48,6 +48,7 @@ class ParticleCache:
         self._module_disk = {}          # pid -> module (cpu)
         self._particle_disk = {}        # pid -> path (disk)
         self._optim_cache = {}          # pid -> Optimizer
+        self._scheduler_cache = {}      # pid -> Scheduler
         self._mk_optims = {}            # pid -> closure
         self._pid2cache = {}            # pid -> cache position
         self._pinned = set()            # pinned pid
@@ -113,7 +114,7 @@ class ParticleCache:
             p.data = param
             p.grad = param_grad
         
-    def create(self, pid: int, mk_optim: Callable) -> nn.Module:
+    def create(self, pid: int, mk_optim: Callable, mk_scheduler: Callable) -> nn.Module:
         """
         Create a new module and manage the cache.
 
@@ -157,6 +158,7 @@ class ParticleCache:
         self._particle_disk[pid] = f"particles/device{self._device}_particle{pid}.pth"
         self._mk_optims[pid] = mk_optim
         self._optim_cache[pid] = mk_optim(module.parameters())
+        self._scheduler_cache[pid] = mk_scheduler(self._optim_cache[pid])
 
         # Increment
         self._next_pos += 1

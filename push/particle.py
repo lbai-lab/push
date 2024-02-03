@@ -136,6 +136,20 @@ class Particle(Waitable):
         args = [detach_to_device(self.device, arg) for arg in args]
         return self._node_event_loop.step(self.pid, loss_fn, data, label, *args)
 
+    def scheduler_step(self, *args) -> PFuture:
+        """Performs a forward and backward pass using the registered optimizer.
+
+        Args:
+            loss_fn (Callable): Loss function to take a step with respect to.
+            data (torch.Tensor): Data.
+            label (torch.Tensor): label.
+
+        Returns:
+            PFuture: Future that eventually contains the loss of the step.
+        """        
+        args = [detach_to_device(self.device, arg) for arg in args]
+        return self._node_event_loop.scheduler_step(self.pid, *args)
+
 
 class ParticleView:
     """User-facing particle view interface.

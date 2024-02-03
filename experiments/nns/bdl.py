@@ -14,8 +14,8 @@ import os
 # =============================================================================
 
 class SineDataset(Dataset):
-    def __init__(self, batch_size, N, D, begin, end):
-        self.xs = torch.linspace(begin, end, batch_size * N * D).reshape(batch_size * N, D)
+    def __init__(self, N, D, begin, end):
+        self.xs = torch.linspace(begin, end, N).reshape(N, D)
         self.ys = torch.sin(self.xs[:, 0]).reshape(-1, 1) 
 
     def __len__(self):
@@ -25,10 +25,13 @@ class SineDataset(Dataset):
         return self.xs[idx], self.ys[idx]
 
 class SineWithNoiseDataset(Dataset):
-    def __init__(self, N, D, begin, end, noise_std=0.05):
+    def __init__(self, N, D, begin, end, noise_std=0.0005):
         self.xs = torch.linspace(begin, end, N).reshape(N, D)
         true_ys = torch.sin(self.xs[:, 0]).reshape(-1, 1)
-        noise = torch.normal(0, noise_std, size=true_ys.size())
+        mean = torch.zeros(true_ys.size()[0])
+        # Create the tensor with the specified entries
+        std = torch.pow(torch.arange(0, N), 1.5) * noise_std
+        noise = torch.normal(mean, std).view(-1,1)
         self.ys = true_ys + noise
 
     def __len__(self):
@@ -38,22 +41,23 @@ class SineWithNoiseDataset(Dataset):
         return self.xs[idx], self.ys[idx]
 
 class CustomMNISTDataset(Dataset):
-    def __init__(self, root, numbers=[0, 1], train=False, transform=None):
+    def __init__(self, root, numbers=[0, 1], train=False, transform=None, limit=10):
         self.root = root
         self.train = train
         self.transform = transform
         self.numbers = numbers
+        self.limit = limit
 
         # Download MNIST dataset
         self.mnist_dataset = datasets.MNIST(root=root, train=train, transform=transforms.ToTensor(), download=False)
         
         # Filter images based on selected numbers
         indices = np.isin(self.mnist_dataset.targets.numpy(), self.numbers)
-        self.data = self.mnist_dataset.data[indices]
-        self.targets = self.mnist_dataset.targets[indices]
+        self.data = self.mnist_dataset.data[indices][:self.limit]
+        self.targets = self.mnist_dataset.targets[indices][:self.limit]
 
     def __len__(self):
-        return len(self.data)
+        return self.limit
 
     def __getitem__(self, idx):
         image, label = self.data[idx], int(self.targets[idx])

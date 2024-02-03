@@ -7,6 +7,7 @@ from typing import *
 from push.bayes.infer import Infer
 from push.particle import Particle
 from push.lib.utils import detach_to_cpu
+import torch.optim.lr_scheduler as lr_scheduler
 
 
 # =============================================================================
@@ -23,8 +24,22 @@ def mk_optim(params):
     Returns:
         torch.optim.Adam: Adam optimizer.
     """
-    return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
+    return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-16)
+    # return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
 
+def mk_scheduler(optim):
+    """
+    Returns Adam optimizer.
+    
+    Args:
+        params: Model parameters.
+    
+    Returns:
+        torch.optim.Adam: Adam optimizer.
+    """
+    # return lr_scheduler.StepLR(optim, step_size=200, gamma=0.1)
+    # return lr_scheduler.ExponentialLR(optim, gamma=0.1, last_epoch=-1, verbose='deprecated')
+    return lr_scheduler.LinearLR(optim, start_factor=1.0, end_factor=1.0, total_iters=1)
 
 # =============================================================================
 # Deep Ensemble Training
@@ -51,13 +66,17 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
     
     other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
     # Training loop
-    for e in tqdm(range(epochs)):
+    tq = tqdm(range(epochs))
+    for e in tq:
         losses = []
         for data, label in dataloader:
             loss = particle.step(loss_fn, data, label).wait()
             losses += [loss]
             for pid in other_particles:
                 particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
+        for pid in other_particles:
+                particle.send(pid, "SCHEDULER_STEP")
+        tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
         # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
     # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
 
@@ -82,6 +101,27 @@ def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) ->
         can be passed for customization during training.
     """
     particle.step(loss_fn, data, label, *args)
+
+def _ensemble_scheduler_step(particle: Particle, *args) -> None:
+    """
+    Perform a single step of ensemble training for a particle.
+
+    Args:
+        particle (Particle): The particle to perform the ensemble step.
+        loss_fn (Callable): The loss function used for training.
+        data: The input data for training.
+        label: The labels corresponding to the input data.
+        *args: Additional arguments for the ensemble step.
+
+    Returns:
+        None
+
+    Note:
+        This function performs a single step of ensemble training for the specified particle. It calls the
+        particle's step method with the provided loss function, input data, and labels. Additional arguments
+        can be passed for customization during training.
+    """
+    particle.scheduler_step(*args)
 
 
 # =============================================================================
@@ -230,7 +270,7 @@ class Ensemble(Infer):
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
                     loss_fn: Callable = torch.nn.MSELoss(),
-                    num_ensembles: int = 2, mk_optim=mk_optim,
+                    num_ensembles: int = 2, mk_optim=mk_optim, mk_scheduler=mk_scheduler,
                     ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """
         Creates particles and launches push distribution training loop.
@@ -253,15 +293,16 @@ class Ensemble(Infer):
         """
         # 1. Create particles
         pids = [
-            self.push_dist.p_create(mk_optim, device=(0 % self.num_devices), receive={
+            self.push_dist.p_create(mk_optim, mk_scheduler, device=(0 % self.num_devices), receive={
                 "ENSEMBLE_MAIN": ensemble_entry,
                 "LEADER_PRED_DL": _leader_pred_dl,
                 "LEADER_PRED": _leader_pred,
             }, state=ensemble_state)]
         for n in range(1, num_ensembles):
-            pids += [self.push_dist.p_create(mk_optim, device=(n % self.num_devices), receive={
+            pids += [self.push_dist.p_create(mk_optim, mk_scheduler, device=(n % self.num_devices), receive={
                 "ENSEMBLE_STEP": _ensemble_step,
                 "ENSEMBLE_PRED": _ensemble_pred,
+                "SCHEDULER_STEP": _ensemble_scheduler_step
             }, state={})]
         # 2. Perform independent training
         self.push_dist.p_wait([self.push_dist.p_launch(0, "ENSEMBLE_MAIN", dataloader, loss_fn, epochs)])

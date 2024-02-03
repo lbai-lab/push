@@ -226,7 +226,7 @@ class NodeEventLoop(Waitable):
             # Handle message
             self._particle_to_rank[msg.pid] = self.rank       # set rank
             self._particle_to_device[msg.pid] = msg.device    # set device
-            module = self.particle_caches[self._particle_to_device[msg.pid]].create(msg.pid, msg.mk_optim)
+            module = self.particle_caches[self._particle_to_device[msg.pid]].create(msg.pid, msg.mk_optim, msg.mk_scheduler)
             self._particle_to_state[msg.pid] = msg.state
             
             # Register receives
@@ -653,9 +653,10 @@ class NodeEventLoop(Waitable):
                 # Optionally step
                 pid_device = self._particle_to_device[pid]
                 optim = self.particle_caches[pid_device]._optim_cache[pid]
+
                 if optim:
                     optim.step()
-
+                
                 # NOTE: Assumes that dictionary stores are atomic
                 self._results[fid] = loss
             except Exception as e:
@@ -675,3 +676,45 @@ class NodeEventLoop(Waitable):
         # Return future
         return PFuture(self, pid, pid, fid, t=t)
     
+    def scheduler_step(self, pid: int, *args: any) -> PFuture:
+        """Performs a training step, including forward and backward passes.
+
+        Args:
+            pid (int): Identifier of the particle.
+            loss_fn (Callable): Loss function used in the training step.
+            data (torch.Tensor): Input data for the training step.
+            label (torch.Tensor): Ground truth labels for the training step.
+            *args: Variable length argument list for the training step.
+
+        Returns:
+            PFuture: A future representing the result of the training step.
+        """
+        # Register future
+        fid = self._create_future_id()
+        self._register_future(pid, fid)
+        
+        # Functionality for step
+        def worker(module):
+            try:
+                # Optionally step
+                pid_device = self._particle_to_device[pid]
+                optim = self.particle_caches[pid_device]._optim_cache[pid]
+                scheduler = self.particle_caches[pid_device]._scheduler_cache[pid]
+                scheduler.step()
+            except Exception as e:
+                self.out_queue.put(e)
+                self._cleanup()
+                raise e
+
+        # Context switch
+        module = self._context_switch_module(pid, pin=True, msg=f'scheduler step {pid}')
+        
+        # Launch thread
+        t = threading.Thread(target=worker, args=(module,))
+        pid_device = self._particle_to_device[pid]
+        self._device_to_pthread[pid_device] = (pid, t)
+        t.start()
+
+        # Return future
+        return PFuture(self, pid, pid, fid, t=t)
+        

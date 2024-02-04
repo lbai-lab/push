@@ -7,6 +7,8 @@ from push.bayes.infer import Infer
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
 from push.lib.utils import detach_to_cpu
+import torch.optim.lr_scheduler as lr_scheduler
+
 
 
 # =============================================================================
@@ -22,8 +24,22 @@ def mk_optim(params):
     Returns:
         torch.optim.Adam: Adam optimizer.
     """
-    return torch.optim.Adam(params, lr=1e-3, weight_decay=1e-2)
+    return torch.optim.Adam(params, lr=1e-4)
+    # return torch.optim.Adam(params, lr=1e-3, weight_decay=1e-2)
 
+def mk_scheduler(optim):
+    """
+    Returns Adam optimizer.
+    
+    Args:
+        params: Model parameters.
+    
+    Returns:
+        torch.optim.Adam: Adam optimizer.
+    """
+    # return lr_scheduler.StepLR(optim, step_size=200, gamma=0.1)
+    # return lr_scheduler.ExponentialLR(optim, gamma=0.1, last_epoch=-1, verbose='deprecated')
+    return lr_scheduler.LinearLR(optim, start_factor=1.0, end_factor=1.0, total_iters=1)
 
 # =============================================================================
 # Swag Training
@@ -104,22 +120,23 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
         swag_pids (list[int]): List of SWAG particle IDs.
     """
     other_pids = [pid for pid in swag_pids if pid != particle.pid]
-    
+    tq = tqdm(range(pretrain_epochs))
     # Pre-training loop
-    for e in tqdm(range(pretrain_epochs)):
+    for e in tq:
         losses = []
         for data, label in dataloader:
             fut = particle.step(loss_fn, data, label)
             futs = [particle.send(pid, "SWAG_STEP", loss_fn, data, label) for pid in other_pids]
             losses += [fut.wait()]
+        tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
         # print("Average epoch loss", torch.mean(torch.tensor(losses)))
     
     # Initialize SWAG
     [particle.send(pid, "SWAG_SWAG", True, cov_mat_rank) for pid in other_pids]
     _swag_swag(particle, True, cov_mat_rank)
-    
+    tq = tqdm(range(swag_epochs))
     # SWAG epochs
-    for e in tqdm(range(swag_epochs)):
+    for e in tq:
         losses = []
         for data, label in dataloader:
             # Update
@@ -130,6 +147,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
         futs = [particle.send(pid, "SWAG_SWAG", False, cov_mat_rank) for pid in other_pids]
         _swag_swag(particle, False, cov_mat_rank)
         [f.wait() for f in futs]
+        tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
         # print("Average epoch loss", torch.mean(torch.tensor(losses)))
 
 
@@ -203,17 +221,16 @@ def _leader_pred(particle: Particle,
         valid_modes = ["mean", "median", "min", "max", "std"]
         for mode_val in mode:
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
-        stacked_preds = torch.stack(t_preds, dim=0)
-        if "mean" in mode:
-            results_dict["mean"] = torch.mean(stacked_preds, dim=0)
-        if "median" in mode:
-            results_dict["median"] = torch.median(stacked_preds, dim=0).values
-        if "min" in mode:
-            results_dict["min"] = torch.min(stacked_preds, dim=0).values
-        if "max" in mode:
-            results_dict["max"] = torch.max(stacked_preds, dim=0).values
         if "std" in mode:
-            results_dict["std"] = torch.std(stacked_preds, dim=0)
+            results_dict["std"] = torch.std(t_preds, dim=1)
+        if "mean" in mode:
+            results_dict["mean"] = torch.mean(t_preds, dim=1)
+        if "median" in mode:
+            results_dict["median"] = torch.median(t_preds, dim=1).values
+        if "min" in mode:
+            results_dict["min"] = torch.min(t_preds, dim=1).values
+        if "max" in mode:
+            results_dict["max"] = torch.max(t_preds, dim=1).values
     else:
         valid_modes = ["logits", "prob", "mode", "mean", "median", "std"]
         for mode_val in mode:
@@ -611,14 +628,14 @@ class MultiSWAG(Infer):
         def mk_swag(model_num):
             # Particle for parameter
             if model_num == 0:
-                param_pid = self.push_dist.p_create(mk_optim, device=(model_num % self.num_devices), receive={
+                param_pid = self.push_dist.p_create(mk_optim, mk_scheduler, device=(model_num % self.num_devices), receive={
                     "SWAG_PARTICLE": mswag_entry,
                     "SWAG_SAMPLE_ENTRY": mswag_sample_entry,
                     "LEADER_PRED": _leader_pred,
                     "LEADER_PRED_DL": _leader_pred_dl,
                 }, state=mswag_state)
             else:
-                param_pid = self.push_dist.p_create(mk_optim, device=(model_num % self.num_devices), receive={
+                param_pid = self.push_dist.p_create(mk_optim, mk_scheduler, device=(model_num % self.num_devices), receive={
                     "SWAG_STEP": _swag_step,
                     "SWAG_SWAG": _swag_swag,
                     "SWAG_SAMPLE": mswag_sample,

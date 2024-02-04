@@ -24,7 +24,7 @@ def mk_optim(params):
     Returns:
         torch.optim.Adam: Adam optimizer.
     """
-    return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-16)
+    return torch.optim.Adam(params, lr=1e-4)
     # return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
 
 def mk_scheduler(optim):

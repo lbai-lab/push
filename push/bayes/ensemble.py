@@ -270,7 +270,7 @@ class Ensemble(Infer):
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
                     loss_fn: Callable = torch.nn.MSELoss(),
-                    num_ensembles: int = 2, mk_optim=mk_optim, mk_scheduler=mk_scheduler,
+                    num_ensembles: int = 2, mk_optim=mk_optim, mk_scheduler = mk_scheduler, prior = False,
                     ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """
         Creates particles and launches push distribution training loop.
@@ -293,13 +293,13 @@ class Ensemble(Infer):
         """
         # 1. Create particles
         pids = [
-            self.push_dist.p_create(mk_optim, mk_scheduler, device=(0 % self.num_devices), receive={
+            self.push_dist.p_create(mk_optim, mk_scheduler, prior, device=(0 % self.num_devices), receive={
                 "ENSEMBLE_MAIN": ensemble_entry,
                 "LEADER_PRED_DL": _leader_pred_dl,
                 "LEADER_PRED": _leader_pred,
             }, state=ensemble_state)]
         for n in range(1, num_ensembles):
-            pids += [self.push_dist.p_create(mk_optim, mk_scheduler, device=(n % self.num_devices), receive={
+            pids += [self.push_dist.p_create(mk_optim, mk_scheduler, prior, device=(n % self.num_devices), receive={
                 "ENSEMBLE_STEP": _ensemble_step,
                 "ENSEMBLE_PRED": _ensemble_pred,
                 "SCHEDULER_STEP": _ensemble_scheduler_step
@@ -349,7 +349,7 @@ class Ensemble(Infer):
 
 def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
                         nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
-                        num_ensembles: int = 2, mk_optim = mk_optim,
+                        num_ensembles: int = 2, prior = False, mk_optim = mk_optim,
                         ensemble_entry = _deep_ensemble_main, ensemble_state={}) -> List[torch.Tensor]:
     """Train a deep ensemble PusH distribution and return a list of particle parameters.
 
@@ -372,5 +372,5 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
     """
     ensemble = Ensemble(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, num_ensembles=num_ensembles, mk_optim=mk_optim,
-                         ensemble_entry=ensemble_entry, ensemble_state=ensemble_state)
+                         ensemble_entry=ensemble_entry, ensemble_state=ensemble_state, prior=prior)
     return ensemble

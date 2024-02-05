@@ -184,7 +184,7 @@ class PusH(Waitable):
         """        
         return len(self._particle_to_rank)
 
-    def p_create(self, mk_optim: Callable, mk_scheduler: Callable, device=0, receive={}, state={}) -> int:
+    def p_create(self, mk_optim: Callable, mk_scheduler: Callable, prior = False, device=0, receive={}, state={}) -> int:
         """Create a particle
 
         Args:

@@ -24,7 +24,8 @@ def mk_optim(params):
     Returns:
         torch.optim.Adam: Adam optimizer.
     """
-    return torch.optim.Adam(params, lr=1e-4)
+    return torch.optim.Adam(params, lr=0.03)
+    # return torch.optim.Adam(params, lr=1e-4)
     # return torch.optim.Adam(params, lr=1e-4, weight_decay=1e-2)
 
 def mk_scheduler(optim):
@@ -196,7 +197,7 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
     # print("t_preds size: ", t_preds.size())
     results_dict = {}
     if f_reg:
-        valid_modes = ["mean", "median", "min", "max", "std"]
+        valid_modes = ["mean", "median", "min", "max", "std", "pred"]
         for mode_val in mode:
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         if "std" in mode:
@@ -209,6 +210,8 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
             results_dict["min"] = t_preds.min(dim=1).values
         if "max" in mode:
             results_dict["max"] = t_preds.max(dim=1).values
+        if "pred" in mode:
+            results_dict["pred"] = t_preds
     else:
         valid_modes = ["logits", "mode", "std", "prob"]
         for mode_val in mode:
@@ -270,7 +273,8 @@ class Ensemble(Infer):
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
                     loss_fn: Callable = torch.nn.MSELoss(),
-                    num_ensembles: int = 2, mk_optim=mk_optim, mk_scheduler = mk_scheduler, prior = False,
+                    num_ensembles: int = 2, mk_optim=mk_optim, mk_scheduler = mk_scheduler,
+                    prior = False, random_seed = False,
                     ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """
         Creates particles and launches push distribution training loop.
@@ -291,15 +295,19 @@ class Ensemble(Infer):
         Returns:
             None
         """
+        if random_seed:
+            train_keys = torch.randint(0, int(1e9), (num_ensembles,), dtype=torch.int64).tolist()
+        else:
+            train_keys = [-1] * num_ensembles
         # 1. Create particles
         pids = [
-            self.push_dist.p_create(mk_optim, mk_scheduler, prior, device=(0 % self.num_devices), receive={
+            self.push_dist.p_create(mk_optim, mk_scheduler, prior, train_keys[0], device=(0 % self.num_devices), receive={
                 "ENSEMBLE_MAIN": ensemble_entry,
                 "LEADER_PRED_DL": _leader_pred_dl,
                 "LEADER_PRED": _leader_pred,
             }, state=ensemble_state)]
         for n in range(1, num_ensembles):
-            pids += [self.push_dist.p_create(mk_optim, mk_scheduler, prior, device=(n % self.num_devices), receive={
+            pids += [self.push_dist.p_create(mk_optim, mk_scheduler, prior, train_keys[n], device=(n % self.num_devices), receive={
                 "ENSEMBLE_STEP": _ensemble_step,
                 "ENSEMBLE_PRED": _ensemble_pred,
                 "SCHEDULER_STEP": _ensemble_scheduler_step
@@ -349,7 +357,7 @@ class Ensemble(Infer):
 
 def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
                         nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
-                        num_ensembles: int = 2, prior = False, mk_optim = mk_optim,
+                        num_ensembles: int = 2, prior = False, random_seed = False, mk_optim = mk_optim,
                         ensemble_entry = _deep_ensemble_main, ensemble_state={}) -> List[torch.Tensor]:
     """Train a deep ensemble PusH distribution and return a list of particle parameters.
 
@@ -372,5 +380,5 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
     """
     ensemble = Ensemble(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, num_ensembles=num_ensembles, mk_optim=mk_optim,
-                         ensemble_entry=ensemble_entry, ensemble_state=ensemble_state, prior=prior)
+                         ensemble_entry=ensemble_entry, ensemble_state=ensemble_state, prior=prior, random_seed=random_seed)
     return ensemble

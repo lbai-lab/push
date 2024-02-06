@@ -226,7 +226,7 @@ class NodeEventLoop(Waitable):
             # Handle message
             self._particle_to_rank[msg.pid] = self.rank       # set rank
             self._particle_to_device[msg.pid] = msg.device    # set device
-            module = self.particle_caches[self._particle_to_device[msg.pid]].create(msg.pid, msg.mk_optim, msg.mk_scheduler)
+            module = self.particle_caches[self._particle_to_device[msg.pid]].create(msg.pid, msg.mk_optim, msg.mk_scheduler, msg.prior, msg.train_key)
             self._particle_to_state[msg.pid] = msg.state
             
             # Register receives

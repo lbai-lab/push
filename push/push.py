@@ -184,7 +184,7 @@ class PusH(Waitable):
         """        
         return len(self._particle_to_rank)
 
-    def p_create(self, mk_optim: Callable, mk_scheduler: Callable, prior = False, device=0, receive={}, state={}) -> int:
+    def p_create(self, mk_optim: Callable, mk_scheduler: Callable, prior = False, train_key = -1, device=0, receive={}, state={}) -> int:
         """Create a particle
 
         Args:
@@ -202,7 +202,7 @@ class PusH(Waitable):
         self._particle_to_device[new_pid] = device
         self._particle_to_rank[new_pid] = self.rank
         self._particle_to_futures[new_pid] = []
-        self._in_queues[self.rank].put(ReceiveParticleInitPDMSG(device, new_pid, mk_optim, mk_scheduler, receive, state))
+        self._in_queues[self.rank].put(ReceiveParticleInitPDMSG(device, new_pid, mk_optim, mk_scheduler, prior, train_key, receive, state))
         
         # Acknowledge
         msg = self._out_queues[self.rank].get()

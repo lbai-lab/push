@@ -114,7 +114,7 @@ class ParticleCache:
             p.data = param
             p.grad = param_grad
         
-    def create(self, pid: int, mk_optim: Callable, mk_scheduler: Callable, prior = False) -> nn.Module:
+    def create(self, pid: int, mk_optim: Callable, mk_scheduler: Callable, prior = False, train_key = -1) -> nn.Module:
         """
         Create a new module and manage the cache.
 
@@ -126,8 +126,15 @@ class ParticleCache:
             nn.Module: The created module.
 
         """
+        # train_key == -1 means no train key
+        if train_key != -1:
+            key, _ = torch.manual_seed(train_key), torch.manual_seed(train_key)
+
         # Create module
         module = self.mk_module(*self.args)
+        if prior:
+            module.apply(module.prior.init_weights)
+            module.apply(module.trainable.init_weights)
         module = module.to(self._device)
         # Save new module to disk
         self._module_disk[pid] = (module.parameters(), [param.grad for param in module.parameters()])

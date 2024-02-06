@@ -102,13 +102,15 @@ class ReceiveParticleInitPDMSG(MSG):
         receive (Callable): The function to receive particles.
         state (Any): State information for initialization.
     """
-    def __init__(self, device: int, pid: int, mk_optim: Callable, mk_scheduler: Callable, receive: Callable, state: Any):
+    def __init__(self, device: int, pid: int, mk_optim: Callable, mk_scheduler: Callable, prior: bool, train_key: int, receive: Callable, state: Any):
         self.device = device
         self.pid = pid
         self.mk_optim = mk_optim
         self.mk_scheduler = mk_scheduler
         self.receive = receive
         self.state = state
+        self.prior = prior
+        self.train_key = train_key
 
     def __str__(self) -> str:
         return f"ReceiveParticleInitPDMSG({self.device}, {self.pid}, {self.mk_optim}, {self.mk_scheduler} ,{self.receive}, {self.state})"

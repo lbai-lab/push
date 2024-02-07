@@ -128,10 +128,12 @@ class ParticleCache:
         """
         # train_key == -1 means no train key
         if train_key != -1:
-            key, _ = torch.manual_seed(train_key), torch.manual_seed(train_key)
+            key = torch.manual_seed(train_key)
 
         # Create module
         module = self.mk_module(*self.args)
+
+        # Apply weight initialization function
         if prior:
             module.apply(module.prior.init_weights)
             module.apply(module.trainable.init_weights)
@@ -165,6 +167,8 @@ class ParticleCache:
         self._particle_disk[pid] = f"particles/device{self._device}_particle{pid}.pth"
 
         self._mk_optims[pid] = mk_optim
+        
+        # Create optimizer
         if prior:
             self._optim_cache[pid] = mk_optim(module.trainable.parameters())
         else:

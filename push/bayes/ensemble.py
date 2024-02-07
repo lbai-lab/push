@@ -13,6 +13,29 @@ import torch.optim.lr_scheduler as lr_scheduler
 # =============================================================================
 # Helper
 # =============================================================================
+def create_optimizer(lr):
+    """
+    Create a function that returns Adam optimizer with a specific learning rate.
+    
+    Args:
+        lr (float): Learning rate for the optimizer.
+    
+    Returns:
+        function: Function that generates Adam optimizer with the specified learning rate.
+    """
+    def mk_optim(params):
+        """
+        Returns Adam optimizer with the specified learning rate.
+        
+        Args:
+            params: Model parameters.
+        
+        Returns:
+            torch.optim.Adam: Adam optimizer.
+        """
+        return torch.optim.Adam(params, lr=lr)
+    
+    return mk_optim
 
 def mk_optim(params):
     """
@@ -272,8 +295,8 @@ class Ensemble(Infer):
         
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
-                    loss_fn: Callable = torch.nn.MSELoss(),
-                    num_ensembles: int = 2, mk_optim=mk_optim, mk_scheduler = mk_scheduler,
+                    loss_fn: Callable = torch.nn.MSELoss(), lr: float = 0.001,
+                    num_ensembles: int = 2, mk_scheduler = mk_scheduler,
                     prior = False, random_seed = False,
                     ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """
@@ -295,6 +318,7 @@ class Ensemble(Infer):
         Returns:
             None
         """
+        mk_optim = create_optimizer(lr)
         if random_seed:
             train_keys = torch.randint(0, int(1e9), (num_ensembles,), dtype=torch.int64).tolist()
         else:
@@ -355,9 +379,9 @@ class Ensemble(Infer):
 # Deep Ensemble Training
 # =============================================================================
 
-def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
-                        nn: Callable, *args, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
-                        num_ensembles: int = 2, prior = False, random_seed = False, mk_optim = mk_optim,
+def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int, 
+                        nn: Callable, *args, lr: float = 0.01, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
+                        num_ensembles: int = 2, prior = False, random_seed = False,
                         ensemble_entry = _deep_ensemble_main, ensemble_state={}) -> List[torch.Tensor]:
     """Train a deep ensemble PusH distribution and return a list of particle parameters.
 
@@ -379,6 +403,6 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
         List[torch.Tensor]: Returns a list of all particle's parameters.
     """
     ensemble = Ensemble(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
-    ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, num_ensembles=num_ensembles, mk_optim=mk_optim,
+    ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, lr=lr, num_ensembles=num_ensembles,
                          ensemble_entry=ensemble_entry, ensemble_state=ensemble_state, prior=prior, random_seed=random_seed)
     return ensemble

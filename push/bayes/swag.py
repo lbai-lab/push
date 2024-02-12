@@ -15,6 +15,30 @@ import torch.optim.lr_scheduler as lr_scheduler
 # Helper functions
 # =============================================================================
 
+def create_optimizer(lr):
+    """
+    Create a function that returns Adam optimizer with a specific learning rate.
+    
+    Args:
+        lr (float): Learning rate for the optimizer.
+    
+    Returns:
+        function: Function that generates Adam optimizer with the specified learning rate.
+    """
+    def mk_optim(params):
+        """
+        Returns Adam optimizer with the specified learning rate.
+        
+        Args:
+            params: Model parameters.
+        
+        Returns:
+            torch.optim.Adam: Adam optimizer.
+        """
+        return torch.optim.Adam(params, lr=lr)
+    
+    return mk_optim
+
 def mk_optim(params):
     """Returns an Adam optimizer.
 
@@ -597,7 +621,7 @@ class MultiSWAG(Infer):
                     dataloader: DataLoader,
                     pretrain_epochs: int, swag_epochs: int,
                     loss_fn: Callable = torch.nn.MSELoss(),
-                    num_models: int = 1, cov_mat_rank: int = 20,
+                    lr: float = 0.01, num_models: int = 1, cov_mat_rank: int = 20,
                     mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                     mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
         """
@@ -624,6 +648,8 @@ class MultiSWAG(Infer):
         if "n" in mswag_state:
             raise ValueError(f"Cannot run with state {mswag_state['n']}. Please rename.")
         mswag_state["n"] = 1
+
+        mk_optim = create_optimizer(lr)
 
         def mk_swag(model_num):
             # Particle for parameter
@@ -684,7 +710,7 @@ class MultiSWAG(Infer):
 # =============================================================================
 
 def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
-                swag_epochs: int, nn: Callable, *args, num_devices=1, cache_size: int = 4, view_size: int = 4,
+                swag_epochs: int, nn: Callable, *args, lr: float = 0.01, num_devices=1, cache_size: int = 4, view_size: int = 4,
                 num_models: int = 1, cov_mat_rank: int=20, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                 mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
     """
@@ -715,6 +741,6 @@ def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
     """
     mswag = MultiSWAG(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     mswag.bayes_infer(dataloader, pretrain_epochs=pretrain_epochs,
-                      swag_epochs=swag_epochs, loss_fn=loss_fn, num_models=num_models, cov_mat_rank=cov_mat_rank, mswag_entry=mswag_entry, mswag_state=mswag_state,
+                      swag_epochs=swag_epochs, loss_fn=loss_fn, lr=lr, num_models=num_models, cov_mat_rank=cov_mat_rank, mswag_entry=mswag_entry, mswag_state=mswag_state,
                       f_save=f_save, mswag_sample_entry=mswag_sample_entry, mswag_sample=mswag_sample)
     return mswag

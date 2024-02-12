@@ -1,6 +1,7 @@
 
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 from typing import *
 
@@ -69,7 +70,7 @@ def mk_scheduler(optim):
 # Deep Ensemble Training
 # =============================================================================
 
-def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int) -> None:
+def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int, bootstrap = True) -> None:
     """
     Main training loop for the lead particle in a deep ensemble.
 
@@ -87,22 +88,75 @@ def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Cal
         DataLoader and loss function. The lead particle also communicates with other particles in the ensemble during training,
         instructing them to step through the batch and training loop in a coordinated manner.
     """
-    
-    other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
-    # Training loop
-    tq = tqdm(range(epochs))
-    for e in tq:
-        losses = []
-        for data, label in dataloader:
-            loss = particle.step(loss_fn, data, label).wait()
-            losses += [loss]
+    if bootstrap:
+        other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
+        num_ensembles = len(other_particles) + 1
+        
+        def generate_bootstrap(seed, n_samples):
+            torch.manual_seed(seed)
+            return torch.randint(0, n_samples, (n_samples,), dtype=torch.long)
+
+        def build_bootstrap_datasets(n_estimators, data_loader):
+            X, Y = [], []
+            for inputs, labels in data_loader:
+                X.append(inputs)
+                Y.append(labels)
+            X = torch.cat(X, dim=0)
+            Y = torch.cat(Y, dim=0)
+            
+            n_samples = len(X)
+            bootstraps = [generate_bootstrap(42 * i, n_samples) for i in range(1, n_estimators + 1)]
+            dataloaders = []
+            for indices in bootstraps:
+                X_b = torch.index_select(X, 0, indices)
+                Y_b = torch.index_select(Y, 0, indices)
+                dataset = TensorDataset(X_b, Y_b)
+                dataloader = DataLoader(dataset, batch_size=data_loader.batch_size, shuffle=True)
+                dataloaders.append(dataloader)
+            return dataloaders
+
+
+        bootstrap_dataloaders = build_bootstrap_datasets(num_ensembles, dataloader)
+        
+        # Training loop
+        tq = tqdm(range(epochs))
+        for e in tq:
+            losses = []
+            for i, dataloader in enumerate(bootstrap_dataloaders):
+                if i == 0:
+                    for data, label in dataloader:
+                        loss = particle.step(loss_fn, data, label).wait()
+                        losses += [loss]
+                else:
+                    for data, label in dataloader:
+                        particle.send(other_particles[i-1], "ENSEMBLE_STEP", loss_fn, data, label)
+
+            tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+            # for data, label in dataloader:
+            #     loss = particle.step(loss_fn, data, label).wait()
+            #     losses += [loss]
+            #     for pid in other_particles:
+            #         particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
+            # for pid in other_particles:
+            #         particle.send(pid, "SCHEDULER_STEP")
+            # tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+
+    else:
+        other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
+        # Training loop
+        tq = tqdm(range(epochs))
+        for e in tq:
+            losses = []
+            for data, label in dataloader:
+                loss = particle.step(loss_fn, data, label).wait()
+                losses += [loss]
+                for pid in other_particles:
+                    particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
             for pid in other_particles:
-                particle.send(pid, "ENSEMBLE_STEP", loss_fn, data, label)
-        for pid in other_particles:
-                particle.send(pid, "SCHEDULER_STEP")
-        tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+                    particle.send(pid, "SCHEDULER_STEP")
+            tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+            # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
         # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
-    # print(f"Average loss {particle.pid}", torch.mean(torch.tensor(losses)))
 
 
 def _ensemble_step(particle: Particle, loss_fn: Callable, data, label, *args) -> None:
@@ -295,9 +349,9 @@ class Ensemble(Infer):
         
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
-                    loss_fn: Callable = torch.nn.MSELoss(), lr: float = 0.001,
+                    loss_fn: Callable = torch.nn.MSELoss(), lr: float = 0.01,
                     num_ensembles: int = 2, mk_scheduler = mk_scheduler,
-                    prior = False, random_seed = False,
+                    prior = False, random_seed = False, bootstrap = False,
                     ensemble_entry=_deep_ensemble_main, ensemble_state={}, f_save: bool = False):
         """
         Creates particles and launches push distribution training loop.
@@ -337,7 +391,7 @@ class Ensemble(Infer):
                 "SCHEDULER_STEP": _ensemble_scheduler_step
             }, state={})]
         # 2. Perform independent training
-        self.push_dist.p_wait([self.push_dist.p_launch(0, "ENSEMBLE_MAIN", dataloader, loss_fn, epochs)])
+        self.push_dist.p_wait([self.push_dist.p_launch(0, "ENSEMBLE_MAIN", dataloader, loss_fn, epochs, bootstrap)])
 
         if f_save:
             self.push_dist.save()
@@ -381,7 +435,7 @@ class Ensemble(Infer):
 
 def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int, 
                         nn: Callable, *args, lr: float = 0.01, num_devices: int = 1, cache_size: int = 4, view_size: int = 4,
-                        num_ensembles: int = 2, prior = False, random_seed = False,
+                        num_ensembles: int = 2, prior = False, random_seed = False, bootstrap = False,
                         ensemble_entry = _deep_ensemble_main, ensemble_state={}) -> List[torch.Tensor]:
     """Train a deep ensemble PusH distribution and return a list of particle parameters.
 

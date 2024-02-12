@@ -9,6 +9,8 @@ from push.bayes.infer import Infer
 from push.particle import Particle
 from push.bayes.utils import flatten, unflatten_like
 from push.bayes.ensemble import _leader_pred_dl, _leader_pred, _ensemble_pred
+import torch.optim.lr_scheduler as lr_scheduler
+
 
 
 # =============================================================================
@@ -28,6 +30,18 @@ def mk_empty_optim(params):
     """
     return None
 
+def mk_empty_scheduler(optim):
+    """
+    Helper function to create an empty optimizer.
+
+    Args:
+        params: Model parameters.
+
+    Returns:
+        None.
+
+    """
+    return None
 
 # -----------------------------------------------------
 # Prior
@@ -300,14 +314,14 @@ class SteinVGD(Infer):
             svgd_state (dict): Additional state information for SVGD. Default is {}.
 
         """
-        pid_leader = self.push_dist.p_create(mk_empty_optim, device=0, receive={
+        pid_leader = self.push_dist.p_create(mk_empty_optim, mk_scheduler=mk_empty_scheduler, device=0, receive={
             "SVGD_LEADER": svgd_entry,
             "LEADER_PRED_DL": _leader_pred_dl,
             "LEADER_PRED": _leader_pred,
         }, state=svgd_state)
         pids = [pid_leader]
         for p in range(num_particles - 1):
-            pid = self.push_dist.p_create(mk_empty_optim, device=((p + 1) % self.num_devices), receive={
+            pid = self.push_dist.p_create(mk_empty_optim, mk_scheduler=mk_empty_scheduler, device=((p + 1) % self.num_devices), receive={
                 "SVGD_STEP": _svgd_step,
                 "SVGD_FOLLOW": _svgd_follow,
                 "ENSEMBLE_PRED": _ensemble_pred,

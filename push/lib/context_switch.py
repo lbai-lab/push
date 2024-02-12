@@ -114,7 +114,7 @@ class ParticleCache:
             p.data = param
             p.grad = param_grad
         
-    def create(self, pid: int, mk_optim: Callable, mk_scheduler: Callable, prior = False, train_key = -1) -> nn.Module:
+    def create(self, pid: int, mk_optim: Callable, mk_scheduler: Callable = None, prior = False, train_key = -1) -> nn.Module:
         """
         Create a new module and manage the cache.
 
@@ -173,7 +173,8 @@ class ParticleCache:
             self._optim_cache[pid] = mk_optim(module.trainable.parameters())
         else:
             self._optim_cache[pid] = mk_optim(module.parameters())
-        self._scheduler_cache[pid] = mk_scheduler(self._optim_cache[pid])
+        if mk_scheduler:
+            self._scheduler_cache[pid] = mk_scheduler(self._optim_cache[pid])
 
         # Increment
         self._next_pos += 1

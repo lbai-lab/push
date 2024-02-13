@@ -470,5 +470,5 @@ def train_deep_ensemble(dataloader: Callable, loss_fn: Callable, epochs: int,
     """
     ensemble = Ensemble(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
     ensemble.bayes_infer(dataloader, epochs, loss_fn=loss_fn, lr=lr, num_ensembles=num_ensembles,
-                         ensemble_entry=ensemble_entry, ensemble_state=ensemble_state, prior=prior, random_seed=random_seed)
+                         ensemble_entry=ensemble_entry, ensemble_state=ensemble_state, prior=prior, bootstrap=bootstrap, random_seed=random_seed)
     return ensemble

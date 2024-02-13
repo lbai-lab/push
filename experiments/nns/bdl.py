@@ -140,6 +140,58 @@ class TwoMoonsModel(nn.Module):
 
         return x
 
+class GenericNet(nn.Module):
+    def __init__(self, input_dim):
+        super(GenericNet, self).__init__()
+        self.input_dim = input_dim
+        
+        self.net = nn.Sequential(
+            nn.Linear(in_features=input_dim, out_features=16),
+            nn.ELU(),
+            nn.Linear(in_features=16, out_features=16),
+            nn.ELU(),
+            nn.Linear(in_features=16, out_features=1)
+        )
+        # Additional layers can be added here based on the architecture
+        # Apply Xavier uniform initialization to the weights
+        self.init_weights(self.net)
+
+    def forward(self, x):
+        return self.net(x)
+
+    def init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.xavier_uniform_(m.weight)
+            m.bias.data.fill_(0.01)
+
+
+class Model(nn.Module):
+    def __init__(self, beta):
+        super(Model, self).__init__()
+        self.prior = GenericNet(input_dim=1)  # Specify the input dimension
+        self.trainable = GenericNet(input_dim=1)  # Specify the input dimension
+        self.beta = beta
+
+    def forward(self, x):
+        x1 = self.prior(x)
+        x2 = self.trainable(x)
+        return self.beta * x1 + x2
+
+
+
+class PriorNet(nn.Module):
+    def __init__(self, beta, model, *args):
+        super(PriorNet, self).__init__()
+        self.prior = model(*args)
+        self.trainable = model(*args)
+        self.beta = beta
+
+    def forward(self, x):
+        x1 = self.prior(x)
+        x2 = self.trainable(x)
+        return self.beta * x1 + x2
+
+
 # =============================================================================
 # Model
 # =============================================================================

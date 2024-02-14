@@ -114,7 +114,7 @@ class ParticleCache:
             p.data = param
             p.grad = param_grad
         
-    def create(self, pid: int, mk_optim: Callable, mk_scheduler: Callable = None, prior = False, train_key = -1) -> nn.Module:
+    def create(self, pid: int, mk_optim: Callable, mk_scheduler: Callable = None, prior = False, train_key = None) -> nn.Module:
         """
         Create a new module and manage the cache.
 

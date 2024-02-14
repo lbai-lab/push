@@ -131,7 +131,7 @@ def _swag_swag(particle: Particle, reset: bool, cov_mat_rank: int) -> None:
 
 
 def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_rank: int,
-                    pretrain_epochs: int, swag_epochs: int, swag_pids: list[int]) -> None:
+                    pretrain_epochs: int, swag_epochs: int, swag_pids: list[int], bootstrap: bool) -> None:
     """Training function for MSWAG particle.
 
     Args:
@@ -143,36 +143,107 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
         swag_epochs (int): Number of SWAG epochs.
         swag_pids (list[int]): List of SWAG particle IDs.
     """
-    other_pids = [pid for pid in swag_pids if pid != particle.pid]
-    tq = tqdm(range(pretrain_epochs))
-    # Pre-training loop
-    for e in tq:
-        losses = []
-        for data, label in dataloader:
-            fut = particle.step(loss_fn, data, label)
-            futs = [particle.send(pid, "SWAG_STEP", loss_fn, data, label) for pid in other_pids]
-            losses += [fut.wait()]
-        tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
-        # print("Average epoch loss", torch.mean(torch.tensor(losses)))
-    
-    # Initialize SWAG
-    [particle.send(pid, "SWAG_SWAG", True, cov_mat_rank) for pid in other_pids]
-    _swag_swag(particle, True, cov_mat_rank)
-    tq = tqdm(range(swag_epochs))
-    # SWAG epochs
-    for e in tq:
-        losses = []
-        for data, label in dataloader:
-            # Update
-            futs = [particle.send(pid, "SWAG_STEP", loss_fn, data, label) for pid in other_pids]
-            fut = particle.step(loss_fn, data, label)
+    if bootstrap:
+        other_particles = swag_pids
+        num_ensembles = len(other_particles) + 1
+        
+        def generate_bootstrap(seed, n_samples):
+            torch.manual_seed(seed)
+            return torch.randint(0, n_samples, (n_samples,), dtype=torch.long)
+
+        def build_bootstrap_datasets(n_estimators, data_loader):
+            X, Y = [], []
+            for inputs, labels in data_loader:
+                X.append(inputs)
+                Y.append(labels)
+            X = torch.cat(X, dim=0)
+            Y = torch.cat(Y, dim=0)
+            
+            n_samples = len(X)
+            bootstraps = [generate_bootstrap(42 * i, n_samples) for i in range(1, n_estimators + 1)]
+            dataloaders = []
+            for indices in bootstraps:
+                X_b = torch.index_select(X, 0, indices)
+                Y_b = torch.index_select(Y, 0, indices)
+                dataset = TensorDataset(X_b, Y_b)
+                dataloader = DataLoader(dataset, batch_size=data_loader.batch_size, shuffle=True)
+                dataloaders.append(dataloader)
+            return dataloaders
+
+
+        bootstrap_dataloaders = build_bootstrap_datasets(num_ensembles, dataloader)
+        
+        # Training loop
+        tq = tqdm(range(pretrain_epochs))
+        for e in tq:
+            losses = []
+            for i, dataloader in enumerate(bootstrap_dataloaders):
+                if i == 0:
+                    for data, label in dataloader:
+                        fut = particle.step(loss_fn, data, label)
+                        # loss = particle.step(loss_fn, data, label).wait()
+                        losses += [fut.wait()]
+                else:
+                    for data, label in dataloader:
+                        fut = particle.send(other_particles[i-1], "SWAG_STEP", loss_fn, data, label)
+                        losses += [fut.wait()]
+
+            tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+
+         # Initialize SWAG
+        [particle.send(pid, "SWAG_SWAG", True, cov_mat_rank) for pid in other_pids]
+
+        _swag_swag(particle, True, cov_mat_rank)
+        tq = tqdm(range(swag_epochs))
+
+        for e in tq:
+            losses = []
+            for i, dataloader in enumerate(bootstrap_dataloaders):
+                if i == 0:
+                    for data, label in dataloader:
+                        fut = particle.step(loss_fn, data, label)
+                        # loss = particle.step(loss_fn, data, label).wait()
+                        losses += [fut.wait()]
+                else:
+                    for data, label in dataloader:
+                        fut = particle.send(other_particles[i-1], "SWAG_STEP", loss_fn, data, label)
+                        losses += [fut.wait()]
+            futs = [particle.send(pid, "SWAG_SWAG", False, cov_mat_rank) for pid in other_pids]
+            _swag_swag(particle, False, cov_mat_rank)
             [f.wait() for f in futs]
-            losses += [fut.wait()]
-        futs = [particle.send(pid, "SWAG_SWAG", False, cov_mat_rank) for pid in other_pids]
-        _swag_swag(particle, False, cov_mat_rank)
-        [f.wait() for f in futs]
-        tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
-        # print("Average epoch loss", torch.mean(torch.tensor(losses)))
+            tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+
+    else:
+        other_pids = [pid for pid in swag_pids if pid != particle.pid]
+        tq = tqdm(range(pretrain_epochs))
+        # Pre-training loop
+        for e in tq:
+            losses = []
+            for data, label in dataloader:
+                fut = particle.step(loss_fn, data, label)
+                futs = [particle.send(pid, "SWAG_STEP", loss_fn, data, label) for pid in other_pids]
+                losses += [fut.wait()]
+            tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+            # print("Average epoch loss", torch.mean(torch.tensor(losses)))
+        
+        # Initialize SWAG
+        [particle.send(pid, "SWAG_SWAG", True, cov_mat_rank) for pid in other_pids]
+        _swag_swag(particle, True, cov_mat_rank)
+        tq = tqdm(range(swag_epochs))
+        # SWAG epochs
+        for e in tq:
+            losses = []
+            for data, label in dataloader:
+                # Update
+                futs = [particle.send(pid, "SWAG_STEP", loss_fn, data, label) for pid in other_pids]
+                fut = particle.step(loss_fn, data, label)
+                [f.wait() for f in futs]
+                losses += [fut.wait()]
+            futs = [particle.send(pid, "SWAG_SWAG", False, cov_mat_rank) for pid in other_pids]
+            _swag_swag(particle, False, cov_mat_rank)
+            [f.wait() for f in futs]
+            tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
+            # print("Average epoch loss", torch.mean(torch.tensor(losses)))
 
 
 # =============================================================================
@@ -618,12 +689,11 @@ class MultiSWAG(Infer):
         self.sample_pids = []
         
     def bayes_infer(self,
-                    dataloader: DataLoader,
-                    pretrain_epochs: int, swag_epochs: int,
-                    loss_fn: Callable = torch.nn.MSELoss(),
-                    lr: float = 0.01, num_models: int = 1, cov_mat_rank: int = 20,
-                    mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
-                    mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
+                    dataloader: DataLoader, pretrain_epochs: int, swag_epochs: int,
+                    loss_fn: Callable = torch.nn.MSELoss(),lr: float = 0.01,
+                    num_models: int = 1, cov_mat_rank: int = 20, prior = False, 
+                    random_seed = False, bootstrap = False, mswag_entry=_mswag_particle, mswag_state={},
+                    f_save=False, mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
         """
         Perform Bayesian inference using MultiSWAG.
 
@@ -651,17 +721,22 @@ class MultiSWAG(Infer):
 
         mk_optim = create_optimizer(lr)
 
+        if random_seed:
+            train_keys = torch.randint(0, int(1e9), (num_models,), dtype=torch.int64).tolist()
+        else:
+            train_keys = [-1] * num_models
+
         def mk_swag(model_num):
             # Particle for parameter
             if model_num == 0:
-                param_pid = self.push_dist.p_create(mk_optim, mk_scheduler, device=(model_num % self.num_devices), receive={
+                param_pid = self.push_dist.p_create(mk_optim, mk_scheduler, prior, train_keys[0], device=(model_num % self.num_devices), receive={
                     "SWAG_PARTICLE": mswag_entry,
                     "SWAG_SAMPLE_ENTRY": mswag_sample_entry,
                     "LEADER_PRED": _leader_pred,
                     "LEADER_PRED_DL": _leader_pred_dl,
                 }, state=mswag_state)
             else:
-                param_pid = self.push_dist.p_create(mk_optim, mk_scheduler, device=(model_num % self.num_devices), receive={
+                param_pid = self.push_dist.p_create(mk_optim, mk_scheduler, prior, train_keys[model_num], device=(model_num % self.num_devices), receive={
                     "SWAG_STEP": _swag_step,
                     "SWAG_SWAG": _swag_swag,
                     "SWAG_SAMPLE": mswag_sample,
@@ -674,7 +749,7 @@ class MultiSWAG(Infer):
             if pid in mswag_state:
                 raise ValueError(f"Cannot run with state {pid}. Please rename.")
 
-        self.push_dist.p_wait([self.push_dist.p_launch(self.swag_pids[0], "SWAG_PARTICLE", dataloader, loss_fn, cov_mat_rank, pretrain_epochs, swag_epochs, self.swag_pids)])
+        self.push_dist.p_wait([self.push_dist.p_launch(self.swag_pids[0], "SWAG_PARTICLE", dataloader, loss_fn, cov_mat_rank, pretrain_epochs, swag_epochs, self.swag_pids, bootstrap)])
 
         if f_save:
             self.push_dist.save()
@@ -710,8 +785,10 @@ class MultiSWAG(Infer):
 # =============================================================================
 
 def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
-                swag_epochs: int, nn: Callable, *args, lr: float = 0.01, num_devices=1, cache_size: int = 4, view_size: int = 4,
-                num_models: int = 1, cov_mat_rank: int=20, mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
+                swag_epochs: int, nn: Callable, *args, lr: float = 0.01, num_devices=1,
+                cache_size: int = 4, view_size: int = 4, num_models: int = 1,
+                cov_mat_rank: int=20, prior = False, random_seed = False, bootstrap = False,
+                mswag_entry=_mswag_particle, mswag_state={}, f_save=False,
                 mswag_sample_entry=_mswag_sample_entry, mswag_sample=_mswag_sample):
     """
     Train a MultiSWAG model.
@@ -740,7 +817,9 @@ def train_mswag(dataloader: DataLoader, loss_fn: Callable, pretrain_epochs: int,
 
     """
     mswag = MultiSWAG(nn, *args, num_devices=num_devices, cache_size=cache_size, view_size=view_size)
-    mswag.bayes_infer(dataloader, pretrain_epochs=pretrain_epochs,
-                      swag_epochs=swag_epochs, loss_fn=loss_fn, lr=lr, num_models=num_models, cov_mat_rank=cov_mat_rank, mswag_entry=mswag_entry, mswag_state=mswag_state,
-                      f_save=f_save, mswag_sample_entry=mswag_sample_entry, mswag_sample=mswag_sample)
+    mswag.bayes_infer(dataloader, pretrain_epochs=pretrain_epochs, swag_epochs=swag_epochs,
+                    loss_fn=loss_fn, lr=lr, num_models=num_models, cov_mat_rank=cov_mat_rank,
+                    prior=prior, random_seed=random_seed, bootstrap=bootstrap, mswag_entry=mswag_entry,
+                    mswag_state=mswag_state, f_save=f_save, mswag_sample_entry=mswag_sample_entry,
+                    mswag_sample=mswag_sample)
     return mswag

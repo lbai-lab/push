@@ -190,6 +190,11 @@ class PriorNet(nn.Module):
         x1 = self.prior(x)
         x2 = self.trainable(x)
         return self.beta * x1 + x2
+    
+    def init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.xavier_uniform_(m.weight)
+            m.bias.data.fill_(0.01)
 
 
 # =============================================================================

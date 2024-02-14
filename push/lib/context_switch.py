@@ -135,8 +135,9 @@ class ParticleCache:
 
         # Apply weight initialization function
         if prior:
-            module.apply(module.prior.init_weights)
-            module.apply(module.trainable.init_weights)
+            module.apply(module.init_weights)
+            # module.apply(module.prior.init_weights)
+            # module.apply(module.trainable.init_weights)
         module = module.to(self._device)
         # Save new module to disk
         self._module_disk[pid] = (module.parameters(), [param.grad for param in module.parameters()])

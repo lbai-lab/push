@@ -1,4 +1,4 @@
-Bayesian Deep Learning Examples
+Bayesian Deep Learning
 =====================
 
 Here are examples of BDL with PusH.

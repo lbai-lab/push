@@ -149,12 +149,12 @@ class MultiMCDropout(Infer):
                     epochs: int,
                     loss_fn: Callable = torch.nn.CrossEntropyLoss(),
                     size_ensemble: int = 2,
-                    mk_optim=mk_optim, f_save: bool = False):
+                    mk_optim=mk_optim, mk_scheduler=None, f_save: bool = False):
         """Create PusH distribution and train it.
         """
         # Create main particle
         pids = []
-        pid_main = self.push_dist.p_create(mk_optim, device=0, receive={
+        pid_main = self.push_dist.p_create(mk_optim, mk_scheduler, device=0, receive={
             "MULTIMC_MAIN": _multimc_main,
             "LEADER_PRED_DL": _leader_pred_dl,
             "LEADER_PRED": _leader_pred,
@@ -163,7 +163,7 @@ class MultiMCDropout(Infer):
 
         # Create worker particles
         for i in range(size_ensemble-1):
-            pids.append(self.push_dist.p_create(mk_optim, device=(i % self.num_devices), receive={
+            pids.append(self.push_dist.p_create(mk_optim, mk_scheduler,device=(i % self.num_devices), receive={
                 "MULTIMC_STEP": _multimc_step,
                 "MULTIMC_PRED": _multimc_pred,
             }))

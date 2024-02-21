@@ -51,9 +51,9 @@ def mk_optim(params):
 
 def _multimc_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int) -> None:
     print_loop = max(int(epochs/10),1)
-    
+    tq = tqdm(range(epochs))
     # Training loop
-    for e in tqdm(range(epochs)):
+    for e in tq:
         losses_futs = []
         for data, label in dataloader:
             losses_futs += [particle.step(loss_fn, data, label)]
@@ -62,7 +62,8 @@ def _multimc_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable,
         if e % print_loop == 0:
             losses = [l.wait() for l in losses_futs]
             average_loss = sum(losses)/len(losses)
-            print(f"Average loss after epoch {e}: {average_loss}")
+            tq.set_postfix({"loss: " : average_loss})
+            # print(f"Average loss after epoch {e}: {average_loss}")
 
 
 def _multimc_step(particle: Particle, loss_fn: Callable, data, label, *args):

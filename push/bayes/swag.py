@@ -313,7 +313,7 @@ def _leader_pred(particle: Particle,
     # t_preds = torch.stack(preds, dim=1)
     results_dict = {}
     if f_reg:
-        valid_modes = ["mean", "median", "min", "max", "std"]
+        valid_modes = ["mean", "median", "min", "max", "std", "pred"]
         for mode_val in mode:
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}."
         if "std" in mode:
@@ -326,6 +326,8 @@ def _leader_pred(particle: Particle,
             results_dict["min"] = torch.min(t_preds, dim=1).values
         if "max" in mode:
             results_dict["max"] = torch.max(t_preds, dim=1).values
+        if "pred" in mode:
+            results_dict["pred"] = t_preds
     else:
         valid_modes = ["logits", "prob", "mode", "mean", "median", "std"]
         for mode_val in mode:

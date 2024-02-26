@@ -9,7 +9,7 @@ This folder contains examples for Deep Ensembles.
    :maxdepth: 2
    :hidden:
 
-   ../../tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
+   ../../../tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
 
 .. _Deep Ensembles:
-   ../../tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
+   ../../../tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb

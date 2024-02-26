@@ -4,8 +4,9 @@ Examples
 Here are examples of training deep bayesian neural networks with Push.
 
 
-- `Bayesian Deep Learning`_ contain examples of bayesian deep learning in PusH.
-- `Datasets`_ contains som datasets we will utilize with PusH.
+
+- :ref:`Bayesian Deep Learning` contains examples of bayesian deep learning in Push.
+- :ref:`Datasets` contains some datasets we will utilize with Push.
 
 
 .. toctree::

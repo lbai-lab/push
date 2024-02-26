@@ -11,6 +11,3 @@ python:
 
 sphinx:
   configuration: docs/source/conf.py
-
-# Specify Pandoc version
-pandoc_version: latest

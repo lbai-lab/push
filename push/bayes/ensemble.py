@@ -82,7 +82,7 @@ def mk_scheduler(optim):
 # Deep Ensemble Training
 # =============================================================================
 
-def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int, bootstrap = True) -> None:
+def _deep_ensemble_main(particle: Particle, dataloader: DataLoader, loss_fn: Callable, epochs: int, bootstrap = False) -> None:
     """
     Main training loop for the lead particle in a deep ensemble.
 
@@ -388,7 +388,7 @@ class Ensemble(Infer):
         if random_seed:
             train_keys = torch.randint(0, int(1e9), (num_ensembles,), dtype=torch.int64).tolist()
         else:
-            train_keys = [-1] * num_ensembles
+            train_keys = [None] * num_ensembles
         # 1. Create particles
         pids = [
             self.push_dist.p_create(mk_optim, mk_scheduler, prior, train_keys[0], device=(0 % self.num_devices), receive={

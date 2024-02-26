@@ -126,8 +126,7 @@ class ParticleCache:
             nn.Module: The created module.
 
         """
-        # train_key == -1 means no train key
-        if train_key != -1:
+        if train_key:
             key = torch.manual_seed(train_key)
 
         # Create module

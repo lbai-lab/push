@@ -118,7 +118,7 @@ def torch_squared_exp_kernel_grad(x: torch.Tensor, y: torch.Tensor, length_scale
 # SVGD
 # =============================================================================
 
-def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
+def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs, bootstrap = False) -> None:
     """
     Perform SVGD update for the leader particle.
 
@@ -132,41 +132,45 @@ def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, 
         epochs (int): Number of training epochs.
 
     """
-    n = len(particle.particle_ids())
-    other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
-    for e in tqdm(range(epochs)):
-        losses = []
-        for data, label in dataloader:
-            fut = particle.step(loss_fn, data, label)
-            futs = [particle.send(pid, "SVGD_STEP", loss_fn, data, label) for pid in other_particles]
-            fut.wait(); [f.wait() for f in futs]
+    if bootstrap:
+        print("yet to be implemented")
+    else:
+        n = len(particle.particle_ids())
+        other_particles = list(filter(lambda x: x != particle.pid, particle.particle_ids()))
 
-            particles = {pid: (particle.get(pid) if pid != particle.pid else
-                list(particle.module.parameters())) for pid in particle.particle_ids()}
-            for pid in other_particles:
-                particles[pid] = particles[pid].wait()
+        for e in tqdm(range(epochs)):
+            losses = []
+            for data, label in dataloader:
+                fut = particle.step(loss_fn, data, label)
+                futs = [particle.send(pid, "SVGD_STEP", loss_fn, data, label) for pid in other_particles]
+                fut.wait(); [f.wait() for f in futs]
 
-            update = {}
-            for pid1, params1 in particles.items():
-                params1 = list(particles[pid1].view().parameters()) if pid1 != particle.pid else params1
-                p_i = flatten(params1)
-                update[pid1] = torch.zeros_like(p_i)
-                for pid2, params2 in particles.items():
-                    params2 = list(particles[pid2].view().parameters()) if pid2 != particle.pid else params2
+                particles = {pid: (particle.get(pid) if pid != particle.pid else
+                    list(particle.module.parameters())) for pid in particle.particle_ids()}
+                for pid in other_particles:
+                    particles[pid] = particles[pid].wait()
 
-                    p_j = flatten(params2)
-                    p_j_grad = flatten([p.grad if p.grad is not None else torch.zeros_like(p) for p in params2])
-                    update[pid1] += torch_squared_exp_kernel(p_j, p_i, lengthscale) * p_j_grad
-                    update[pid1] += torch_squared_exp_kernel_grad(p_j, p_i, lengthscale)
-                update[pid1] = update[pid1] / n
+                update = {}
+                for pid1, params1 in particles.items():
+                    params1 = list(particles[pid1].view().parameters()) if pid1 != particle.pid else params1
+                    p_i = flatten(params1)
+                    update[pid1] = torch.zeros_like(p_i)
+                    for pid2, params2 in particles.items():
+                        params2 = list(particles[pid2].view().parameters()) if pid2 != particle.pid else params2
 
-            futs = [particle.send(pid, "SVGD_FOLLOW", lr, update[pid]) for pid in other_particles]
-            [f.wait() for f in futs]
-            _svgd_follow(particle, lr, update[particle.pid])
-            loss = loss_fn(particle.forward(data).wait().to("cpu"), label)
-            losses += [torch.mean(loss).item()]
-        # print(f"Average loss {torch.mean(torch.tensor(losses))}")
+                        p_j = flatten(params2)
+                        p_j_grad = flatten([p.grad if p.grad is not None else torch.zeros_like(p) for p in params2])
+                        update[pid1] += torch_squared_exp_kernel(p_j, p_i, lengthscale) * p_j_grad
+                        update[pid1] += torch_squared_exp_kernel_grad(p_j, p_i, lengthscale)
+                    update[pid1] = update[pid1] / n
+
+                futs = [particle.send(pid, "SVGD_FOLLOW", lr, update[pid]) for pid in other_particles]
+                [f.wait() for f in futs]
+                _svgd_follow(particle, lr, update[particle.pid])
+                loss = loss_fn(particle.forward(data).wait().to("cpu"), label)
+                losses += [torch.mean(loss).item()]
+            # print(f"Average loss {torch.mean(torch.tensor(losses))}")
 
 
 def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:
@@ -296,7 +300,7 @@ class SteinVGD(Infer):
 
     def bayes_infer(self,
                     dataloader: DataLoader, epochs: int,
-                    prior=None, loss_fn=torch.nn.MSELoss(),
+                    prior=False, random_seed=False, bootstrap = False, loss_fn=torch.nn.MSELoss(),
                     num_particles=1, lengthscale=1.0, lr=1e-3,
                     svgd_entry=_svgd_leader, svgd_state={}):
         """
@@ -314,20 +318,24 @@ class SteinVGD(Infer):
             svgd_state (dict): Additional state information for SVGD. Default is {}.
 
         """
-        pid_leader = self.push_dist.p_create(mk_empty_optim, mk_scheduler=mk_empty_scheduler, device=0, receive={
+        if random_seed:
+            train_keys = torch.randint(0, int(1e9), (num_particles,), dtype=torch.int64).tolist()
+        else:
+            train_keys = [None] * num_particles
+        pid_leader = self.push_dist.p_create(mk_empty_optim, mk_scheduler=mk_empty_scheduler, prior=prior, train_key=train_keys[0], device=0, receive={
             "SVGD_LEADER": svgd_entry,
             "LEADER_PRED_DL": _leader_pred_dl,
             "LEADER_PRED": _leader_pred,
         }, state=svgd_state)
         pids = [pid_leader]
         for p in range(num_particles - 1):
-            pid = self.push_dist.p_create(mk_empty_optim, mk_scheduler=mk_empty_scheduler, device=((p + 1) % self.num_devices), receive={
+            pid = self.push_dist.p_create(mk_empty_optim, mk_scheduler=mk_empty_scheduler, prior=prior, train_key=train_keys[p], device=((p + 1) % self.num_devices), receive={
                 "SVGD_STEP": _svgd_step,
                 "SVGD_FOLLOW": _svgd_follow,
                 "ENSEMBLE_PRED": _ensemble_pred,
             }, state=svgd_state)
             pids += [pid]
-        self.push_dist.p_wait([self.push_dist.p_launch(0, "SVGD_LEADER", prior, loss_fn, lengthscale, lr, dataloader, epochs)])
+        self.push_dist.p_wait([self.push_dist.p_launch(0, "SVGD_LEADER", prior, loss_fn, lengthscale, lr, dataloader, epochs, bootstrap)])
 
     def posterior_pred(self, data: DataLoader, f_reg=True, mode=["mean"]) -> torch.Tensor:
         if isinstance(data, torch.Tensor):

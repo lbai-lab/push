@@ -18,6 +18,7 @@ This is documentation for the PusH `library <https://github.com/lbai-lab/push>`_
    :caption: Tutorials
 
    tutorials/01_Bayesian_Deep_Learning/bayesian_deep_learning.ipynb
+   tutorials/02_Uncertainty_Quantification/uncertainty.ipynb
 
 .. toctree::
    :maxdepth: 2

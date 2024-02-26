@@ -12,3 +12,10 @@ Here are examples of training deep bayesian neural networks with Push.
    :caption: Bayesian Deep Learning
 
    01_Bayesian_Deep_Learning/index
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
+   :caption: Datasets
+
+   03_Datasets/index

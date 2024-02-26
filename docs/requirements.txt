@@ -4,4 +4,4 @@ nbsphinx==0.9.3
 ipython<=8.6.0
 ipykernel<=6.17.1
 torch>=1.11
-pandoc==2.1
+pandoc==2.14.2

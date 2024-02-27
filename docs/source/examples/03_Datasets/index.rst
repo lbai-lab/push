@@ -12,7 +12,7 @@ Here are datasets we will use throughout a variety of tutorials and examples wit
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: toy
+   :caption: Toy
 
    ./toy.ipynb
 

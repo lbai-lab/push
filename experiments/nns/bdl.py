@@ -70,6 +70,40 @@ class CustomMNISTDataset(Dataset):
 
         return image, label
 
+class SelectMNISTDataset(Dataset):
+    def __init__(self, root, numbers=[0, 1], train=False, transform=None, limit=None):
+        self.root = root
+        self.train = train
+        self.transform = transform
+        self.numbers = numbers
+
+        # Download MNIST dataset
+        self.mnist_dataset = datasets.MNIST(root=root, train=train, transform=transforms.ToTensor(), download=True)
+
+        # Filter images based on selected numbers
+        indices = np.isin(self.mnist_dataset.targets.numpy(), self.numbers)
+        self.data = self.mnist_dataset.data[indices]
+        self.targets = self.mnist_dataset.targets[indices]
+
+        # If limit is specified, truncate the dataset
+        if limit is not None:
+            self.data = self.data[:limit]
+            self.targets = self.targets[:limit]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        image, label = self.data[idx], int(self.targets[idx])
+
+        # Convert to PIL Image
+        image = transforms.ToPILImage()(image)
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label
+
 # =============================================================================
 # Architecture
 # =============================================================================

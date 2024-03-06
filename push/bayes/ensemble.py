@@ -302,7 +302,7 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
         if "pred" in mode:
             results_dict["pred"] = t_preds
     else:
-        valid_modes = ["logits", "mode", "std", "prob"]
+        valid_modes = ["logits", "mode", "std", "prob", "mean_prob"]
         for mode_val in mode:
             assert mode_val in valid_modes, f"Mode {mode_val} not supported. Valid modes are {valid_modes}." 
 
@@ -313,6 +313,8 @@ def _leader_pred(particle: Particle, data: torch.Tensor, f_reg: bool = True, mod
             results_dict["logits"] = t_preds
         if "prob" in mode:
             results_dict["prob"] = stacked_preds
+        if "mean_prob" in mode:
+            results_dict["mean_prob"] = torch.mean(stacked_preds, dim=1)
         if "mode" in mode:
             cls = [tensor_list.argmax(dim=1) for tensor_list in t_preds_softmax]
             stacked_cls = torch.stack(cls)

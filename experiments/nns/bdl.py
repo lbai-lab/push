@@ -71,24 +71,25 @@ class CustomMNISTDataset(Dataset):
         return image, label
 
 class SelectMNISTDataset(Dataset):
-    def __init__(self, root, numbers=[0, 1], train=False, transform=None, limit=None):
+    def __init__(self, root, numbers=[0, 1], num_entries_per_digit=None, train=False, transform=None):
         self.root = root
         self.train = train
         self.transform = transform
         self.numbers = numbers
+        self.num_entries_per_digit = num_entries_per_digit
 
         # Download MNIST dataset
         self.mnist_dataset = datasets.MNIST(root=root, train=train, transform=transforms.ToTensor(), download=True)
 
-        # Filter images based on selected numbers
-        indices = np.isin(self.mnist_dataset.targets.numpy(), self.numbers)
+        # Filter images based on selected numbers and number of entries per digit
+        indices = []
+        for digit in self.numbers:
+            num_entries = self.num_entries_per_digit
+            digit_indices = np.where(self.mnist_dataset.targets.numpy() == digit)[0][:num_entries]
+            indices.extend(digit_indices)
+
         self.data = self.mnist_dataset.data[indices]
         self.targets = self.mnist_dataset.targets[indices]
-
-        # If limit is specified, truncate the dataset
-        if limit is not None:
-            self.data = self.data[:limit]
-            self.targets = self.targets[:limit]
 
     def __len__(self):
         return len(self.data)

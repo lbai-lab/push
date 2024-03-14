@@ -30,7 +30,7 @@ class SineWithNoiseDataset(Dataset):
         true_ys = torch.sin(self.xs[:, 0]).reshape(-1, 1)
         mean = torch.zeros(true_ys.size()[0])
         # Create the tensor with the specified entries
-        std = torch.pow(torch.arange(0, N), 1.6) * noise_std
+        std = torch.pow(torch.arange(0, N), 0.9) * noise_std
         noise = torch.normal(mean, std).view(-1,1)
         self.ys = true_ys + noise
 

@@ -35,7 +35,7 @@ def create_optimizer(lr):
         Returns:
             torch.optim.Adam: Adam optimizer.
         """
-        return torch.optim.Adam(params, lr=lr)
+        return torch.optim.Adam(params, lr=lr, weight_decay=lr/1e3)
     
     return mk_optim
 

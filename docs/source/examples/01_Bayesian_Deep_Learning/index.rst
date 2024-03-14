@@ -23,7 +23,6 @@ Here are examples of BDL with PusH.
 
    00_MC_Dropout/mc_dropout.ipynb
 
-
 .. toctree::
    :glob:
    :maxdepth: 1

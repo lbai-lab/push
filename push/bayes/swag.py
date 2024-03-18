@@ -347,7 +347,7 @@ def _leader_pred(particle: Particle,
             stacked_cls = torch.stack(cls)
             results_dict["mode"] = torch.mode(stacked_cls, dim=1).values
         if "std" in mode:
-            results_dict["std"] = torch.std(stacked_preds, dim=0)
+            results_dict["std"] = torch.std(stacked_preds, dim=1)
     return results_dict
 
 

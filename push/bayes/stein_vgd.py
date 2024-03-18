@@ -170,7 +170,7 @@ def _svgd_leader(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, 
                 _svgd_follow(particle, lr, update[particle.pid])
                 loss = loss_fn(particle.forward(data).wait().to("cpu"), label)
                 losses += [torch.mean(loss).item()]
-            # print(f"Average loss {torch.mean(torch.tensor(losses))}")
+            print(f"Average loss {torch.mean(torch.tensor(losses))}")
 
 
 def _svgd_leader_memeff(particle: Particle, prior, loss_fn: Callable, lengthscale, lr, dataloader: DataLoader, epochs) -> None:

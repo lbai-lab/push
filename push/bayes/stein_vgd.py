@@ -353,7 +353,7 @@ class SteinVGD(Infer):
 # =============================================================================
 
 def train_svgd(dataloader: DataLoader, loss_fn: Callable, epochs: int, num_particles: int, nn: Callable, *args,
-               lengthscale=1.0, lr=1e3, prior=None,
+               lengthscale=1.0, lr=1e-3, prior=None,
                num_devices=1, cache_size=4, view_size=4,
                svgd_entry=_svgd_leader, svgd_state={}) -> None:
     """

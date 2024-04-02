@@ -453,6 +453,7 @@ class NodeEventLoop(Waitable):
             
             # NOTE: Execute function on main node event loop.
             #       Compute heavy items are run on separate threads.
+            # print("self._hooks[pid]: ", self._hooks[pid])
             fn = self._hooks[pid][msg_name]
             state = self._particle_to_state[pid]
             pid_device = self._particle_to_device[pid]

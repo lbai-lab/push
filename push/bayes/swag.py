@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, TensorDataset
 from tqdm import tqdm
 from typing import *
 from collections import defaultdict 
@@ -131,7 +132,7 @@ def _swag_swag(particle: Particle, reset: bool, cov_mat_rank: int) -> None:
 
 
 def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_rank: int,
-                    pretrain_epochs: int, swag_epochs: int, swag_pids: list[int], bootstrap: bool) -> None:
+                    pretrain_epochs: int, swag_epochs: int, swag_pids: List[int], bootstrap: bool) -> None:
     """Training function for MSWAG particle.
 
     Args:
@@ -144,9 +145,9 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
         swag_pids (list[int]): List of SWAG particle IDs.
     """
     if bootstrap:
-        other_particles = swag_pids
-        num_ensembles = len(other_particles) + 1
-        
+        num_ensembles = len(swag_pids)
+        other_pids = [pid for pid in swag_pids if pid != particle.pid]
+
         def generate_bootstrap(seed, n_samples):
             torch.manual_seed(seed)
             return torch.randint(0, n_samples, (n_samples,), dtype=torch.long)
@@ -170,7 +171,6 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
                 dataloaders.append(dataloader)
             return dataloaders
 
-
         bootstrap_dataloaders = build_bootstrap_datasets(num_ensembles, dataloader)
         
         # Training loop
@@ -185,9 +185,8 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
                         losses += [fut.wait()]
                 else:
                     for data, label in dataloader:
-                        fut = particle.send(other_particles[i-1], "SWAG_STEP", loss_fn, data, label)
-                        losses += [fut.wait()]
-
+                        fut = particle.send(swag_pids[i], "SWAG_STEP", loss_fn, data, label)
+                        # losses += [fut.wait()]
             tq.set_postfix({'loss': torch.mean(torch.tensor(losses))})
 
          # Initialize SWAG
@@ -206,8 +205,7 @@ def _mswag_particle(particle: Particle, dataloader, loss_fn: Callable, cov_mat_r
                         losses += [fut.wait()]
                 else:
                     for data, label in dataloader:
-                        fut = particle.send(other_particles[i-1], "SWAG_STEP", loss_fn, data, label)
-                        losses += [fut.wait()]
+                        fut = particle.send(swag_pids[i], "SWAG_STEP", loss_fn, data, label)
             futs = [particle.send(pid, "SWAG_SWAG", False, cov_mat_rank) for pid in other_pids]
             _swag_swag(particle, False, cov_mat_rank)
             [f.wait() for f in futs]
